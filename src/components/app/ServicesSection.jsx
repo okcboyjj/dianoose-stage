@@ -1,0 +1,279 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, X, Loader2, Music, List, Users, FileText, Save, Trash2, Copy, Share2, Calendar, Clock } from "lucide-react";
+
+const ServiceEntity = base44.entities.Service;
+const SongEntity = base44.entities.Song;
+
+const SERVICE_TYPES = ["Sunday Morning", "Sunday Evening", "Youth Night", "Mid-Week", "Special Event", "Holiday Service"];
+
+function NewServiceModal({ churchId, onClose, onSave }) {
+  const [form, setForm] = useState({ name: "", date: "", time: "", type: "Sunday Morning", notes: "" });
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleCreate = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    await ServiceEntity.create({ ...form, church_id: churchId, status: "upcoming", songs: [], musicians: [] });
+    setSaving(false);
+    onSave();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card border border-border/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20">
+          <h3 className="font-bold text-foreground text-lg">+ New Service</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground ml-1">Service Name *</Label>
+            <Input value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Sunday Morning Worship" className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground ml-1">Date</Label>
+              <Input type="date" value={form.date} onChange={e => set("date", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground ml-1">Time</Label>
+              <Input type="time" value={form.time} onChange={e => set("time", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground ml-1">Type</Label>
+            <select value={form.type} onChange={e => set("type", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
+              {SERVICE_TYPES.map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground ml-1">Notes</Label>
+            <Textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Theme, series, special instructions..." rows={3} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm resize-none" />
+          </div>
+        </div>
+        <div className="flex gap-3 px-6 py-4 border-t border-border/50 bg-secondary/10">
+          <Button variant="outline" onClick={onClose} className="border-border/50 text-foreground hover:bg-background h-10 px-5 rounded-lg">Cancel</Button>
+          <Button onClick={handleCreate} disabled={saving || !form.name.trim()} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-lg font-semibold">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Create"}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function ServiceDetailModal({ service, songs, onClose, onSave }) {
+  const [tab, setTab] = useState("setlist");
+  const [form, setForm] = useState({ ...service });
+  const [saving, setSaving] = useState(false);
+  const [songSearch, setSongSearch] = useState("");
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const serviceSongs = (form.songs || []).map(id => songs.find(s => s.id === id)).filter(Boolean);
+  const availableSongs = songs.filter(s => !(form.songs || []).includes(s.id) && (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase())));
+
+  const addSong = (songId) => set("songs", [...(form.songs || []), songId]);
+  const removeSong = (songId) => set("songs", (form.songs || []).filter(id => id !== songId));
+
+  const handleSave = async () => {
+    setSaving(true);
+    await ServiceEntity.update(service.id, form);
+    setSaving(false);
+    onSave();
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this service?")) return;
+    await ServiceEntity.delete(service.id);
+    onSave();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card border border-border/50 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary opacity-50" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20">
+          <h3 className="font-bold text-foreground text-lg truncate">{form.name || "Service"}</h3>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-semibold h-8 px-4">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Save className="w-3 h-3 mr-1.5" />Save</>}
+            </Button>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 px-6 pt-3 pb-2 bg-secondary/10 border-b border-border/50 overflow-x-auto">
+          {[{ id: "setlist", label: "🎵 Setlist" }, { id: "info", label: "ℹ️ Service Info" }, { id: "notes", label: "📝 Notes" }].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="overflow-y-auto max-h-[60vh] p-6">
+          {tab === "setlist" && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-bold text-foreground mb-3 uppercase tracking-wider">Current Setlist ({serviceSongs.length} songs)</p>
+                {serviceSongs.length === 0 && <p className="text-sm text-muted-foreground text-center py-6 bg-secondary/20 rounded-xl border border-border/30">No songs added yet. Search below to add songs.</p>}
+                <div className="space-y-2">
+                  {serviceSongs.map((song, i) => (
+                    <div key={song.id} className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3 group">
+                      <span className="text-xs text-muted-foreground w-5 text-center font-bold">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{song.title}</p>
+                        <p className="text-xs text-muted-foreground">{song.artist}{song.key ? ` · Key of ${song.key}` : ""}</p>
+                      </div>
+                      <button onClick={() => removeSong(song.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-foreground mb-2 uppercase tracking-wider">Add Songs</p>
+                <div className="flex items-center gap-2 bg-background/50 border border-border/50 rounded-xl px-3 py-2 mb-3 focus-within:border-primary/50 transition-all">
+                  <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search song library..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1" />
+                </div>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {availableSongs.slice(0, 20).map(song => (
+                    <button key={song.id} onClick={() => addSong(song.id)} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-background/30 hover:bg-primary/10 hover:border-primary/30 border border-transparent transition-all text-left group">
+                      <Music className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
+                      <span className="text-sm text-foreground flex-1 truncate">{song.title}</span>
+                      {song.key && <span className="text-xs text-primary/70 font-medium">{song.key}</span>}
+                      <Plus className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 shrink-0" />
+                    </button>
+                  ))}
+                  {availableSongs.length === 0 && <p className="text-xs text-muted-foreground text-center py-3">No songs found</p>}
+                </div>
+              </div>
+            </div>
+          )}
+          {tab === "info" && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground ml-1">Service Name</Label>
+                <Input value={form.name || ""} onChange={e => set("name", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground ml-1">Date</Label>
+                  <Input type="date" value={form.date || ""} onChange={e => set("date", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium text-muted-foreground ml-1">Time</Label>
+                  <Input type="time" value={form.time || ""} onChange={e => set("time", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground ml-1">Type</Label>
+                <select value={form.type || "Sunday Morning"} onChange={e => set("type", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
+                  {SERVICE_TYPES.map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground ml-1">Status</Label>
+                <select value={form.status || "upcoming"} onChange={e => set("status", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
+                  {["upcoming", "past"].map(t => <option key={t} value={t} className="bg-card capitalize">{t}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+          {tab === "notes" && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Service Notes</Label>
+                <Textarea value={form.notes || ""} onChange={e => set("notes", e.target.value)} placeholder="Theme, series, special notes..." rows={5} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 px-6 py-4 border-t border-border/50 bg-secondary/10">
+          <button onClick={handleDelete} className="flex items-center gap-1.5 text-xs text-destructive hover:underline font-medium transition-all"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+          <div className="flex-1" />
+          <Button variant="outline" onClick={onClose} className="border-border/50 text-foreground hover:bg-background h-10 px-5 rounded-lg">Close</Button>
+          <Button onClick={handleSave} disabled={saving} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-lg font-semibold px-6">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" />Save</>}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function ServicesSection({ church, songs, services, onRefresh }) {
+  const [filter, setFilter] = useState("All");
+  const [showNew, setShowNew] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+
+  const filtered = services.filter(s => {
+    if (filter === "Upcoming") return s.status !== "past";
+    if (filter === "Past") return s.status === "past";
+    return true;
+  }).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+  return (
+    <div className="space-y-6 pb-12">
+      <div className="flex sm:items-center justify-between flex-col sm:flex-row gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Services</h1>
+          <p className="text-sm text-muted-foreground font-medium">Plan and manage every worship service.</p>
+        </div>
+        <Button onClick={() => setShowNew(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
+          <Plus className="w-4 h-4 mr-2" /> New Service
+        </Button>
+      </div>
+
+      <div className="flex gap-2">
+        {["All", "Upcoming", "Past"].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filter === f ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/50 text-muted-foreground hover:text-foreground"}`}>{f}</button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-4"><List className="w-7 h-7 text-muted-foreground" /></div>
+          <p className="text-foreground font-semibold mb-1">No services yet</p>
+          <p className="text-sm text-muted-foreground">Click "+ New Service" to plan your first service.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filtered.map(service => {
+            const songCount = (service.songs || []).length;
+            const isUpcoming = service.status !== "past";
+            return (
+              <div key={service.id} onClick={() => setSelectedService(service)} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-5 hover:shadow-lg hover:-translate-y-0.5">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isUpcoming ? "bg-primary/10 group-hover:bg-primary/20" : "bg-secondary/50"}`}>
+                  <Calendar className={`w-5 h-5 ${isUpcoming ? "text-primary" : "text-muted-foreground"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">{service.name}</p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    {service.date && <span className="text-xs text-muted-foreground font-medium">{new Date(service.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>}
+                    {service.time && <span className="text-xs text-muted-foreground">{service.time}</span>}
+                    {service.type && <span className="text-xs text-muted-foreground">{service.type}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs bg-secondary border border-border/50 text-muted-foreground rounded-lg px-3 py-1 font-medium">{songCount} song{songCount !== 1 ? "s" : ""}</span>
+                  <span className={`text-[10px] font-bold rounded-full px-2.5 py-1 uppercase tracking-wider ${isUpcoming ? "bg-primary/10 text-primary border border-primary/20" : "bg-secondary text-muted-foreground border border-border/30"}`}>{isUpcoming ? "Upcoming" : "Past"}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {showNew && <NewServiceModal churchId={church.id} onClose={() => setShowNew(false)} onSave={() => { setShowNew(false); onRefresh(); }} />}
+      {selectedService && <ServiceDetailModal service={selectedService} songs={songs} onClose={() => setSelectedService(null)} onSave={() => { setSelectedService(null); onRefresh(); }} />}
+    </div>
+  );
+}

@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Library, Star, Guitar, Users, Calendar, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, ChevronRight, Save, Printer, Edit3, Eye, Trash2, Copy, Send, Check, ChevronDown, Clock, MapPin, Link as LinkIcon, ArrowRight, AlertCircle, Loader2, MoreVertical, BookOpen, Zap, Flame, Mail } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Calendar, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, ChevronRight, Save, Trash2, Copy, Send, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail } from "lucide-react";
+import ServicesSection from "@/components/app/ServicesSection";
+import MyLibrarySection from "@/components/app/MyLibrarySection";
+import MusicianSection from "@/components/app/MusicianSection";
+import AdminSection from "@/components/app/AdminSection";
+import SettingsSection from "@/components/app/SettingsSection";
+import NotificationsSection from "@/components/app/NotificationsSection";
+import MyStageSection from "@/components/app/MyStageSection";
 
 const SongEntity = base44.entities.Song;
 const ServiceEntity = base44.entities.Service;
@@ -1083,7 +1090,9 @@ function MainApp({ onLogout }) {
         <AnimatedElement>
           <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-1">Dashboard</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-1">
+                {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; })()}{user?.first_name ? `, ${user.first_name}!` : "!"}
+              </h1>
               <p className="text-sm text-muted-foreground font-medium">Here's everything you need for this week.</p>
             </div>
           </div>
@@ -1163,19 +1172,21 @@ function MainApp({ onLogout }) {
       </div>
     );
 
-    // Default placeholder for other sections to keep code concise but robust
-    return (
-      <AnimatedElement>
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-          <div className="w-20 h-20 rounded-3xl bg-secondary border border-border flex items-center justify-center mb-6 shadow-xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50" />
-            <Settings className="w-8 h-8 text-muted-foreground relative z-10" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-2 capitalize">{activeSection.replace(/([A-Z])/g, ' $1').trim()}</h2>
-          <p className="text-sm text-muted-foreground max-w-sm">This section is functional in the full app architecture. Select Dashboard or Song Library to see styled views.</p>
-        </div>
-      </AnimatedElement>
+    if (activeSection === "services") return <ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} />;
+    if (activeSection === "mylibrary") return <MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} />;
+    if (activeSection === "mystage") return <MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} />;
+    if (activeSection === "musicians") return <MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} />;
+    if (activeSection === "notifications") return <NotificationsSection notifications={notifications} onRefresh={loadData} />;
+    if (activeSection === "admin") return <AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} />;
+    if (activeSection === "settings") return (
+      <SettingsSection
+        church={church}
+        user={user}
+        onChurchUpdate={(updated) => { globalChurch = updated; }}
+        onUserUpdate={(updated) => { globalUser = updated; }}
+      />
     );
+    return null;
   };
 
   return (
