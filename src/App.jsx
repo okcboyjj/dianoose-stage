@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from './pages/Home';
+import ResetPassword from './pages/ResetPassword';
 import Layout from './components/Layout';
 // Add page imports here
 
@@ -31,6 +32,8 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      {/* Password reset — must be outside auth gate so unauthenticated users can reach it */}
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         {/* Add your page Route elements here */}
