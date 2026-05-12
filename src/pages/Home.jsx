@@ -86,16 +86,21 @@ function LoginScreen({ onAuth }) {
   const handleSignIn = async () => {
     setError(""); setLoading(true);
     try {
-      const user = await base44.auth.login(signInEmail, signInPassword);
+      const { user } = await base44.auth.loginViaEmailPassword(signInEmail, signInPassword);
       if (!user) throw new Error("Invalid credentials");
       const members = await ChurchMemberEntity.filter({ user_id: user.id });
-      if (members.length === 0) throw new Error("No church account found for this user.");
+      if (members.length === 0) throw new Error("No church account found for this user. Ask your admin to add you as a member.");
       const churches = await ChurchEntity.filter({ id: members[0].church_id });
       globalUser = { ...user, ...members[0] };
       globalChurch = churches[0] || null;
       onAuth();
     } catch (e) {
-      setError(e.message || "Sign in failed.");
+      const msg = e?.message || "";
+      if (msg.includes("Invalid") || msg.includes("credentials") || msg.includes("password")) {
+        setError("Incorrect email or password. Please try again.");
+      } else {
+        setError(msg || "Sign in failed. Please try again.");
+      }
     } finally { setLoading(false); }
   };
 
@@ -103,18 +108,38 @@ function LoginScreen({ onAuth }) {
     setError(""); setLoading(true);
     try {
       if (!joinCode.trim()) throw new Error("Please enter a team code.");
-      const churches = await ChurchEntity.filter({ team_code: joinCode.trim() });
-      if (churches.length === 0) throw new Error("Invalid team code. Check with your admin.");
+      if (!joinEmail.trim()) throw new Error("Please enter your email address.");
+      if (!joinPassword.trim()) throw new Error("Please enter your password.");
+      const churches = await ChurchEntity.filter({ team_code: joinCode.trim().toUpperCase() });
+      if (churches.length === 0) throw new Error("Invalid team code. Double-check with your admin.");
       const church = churches[0];
-      const members = await ChurchMemberEntity.filter({ church_id: church.id, email: joinEmail });
-      if (members.length === 0) throw new Error("No member found with that email in this church.");
-      const user = await base44.auth.login(joinEmail, joinPassword);
+      const { user } = await base44.auth.loginViaEmailPassword(joinEmail, joinPassword);
       if (!user) throw new Error("Invalid credentials");
-      globalUser = { ...user, ...members[0] };
+      const members = await ChurchMemberEntity.filter({ church_id: church.id, user_id: user.id });
+      if (members.length === 0) {
+        // member profile may not exist yet — auto-create a basic one
+        const newMember = await ChurchMemberEntity.create({
+          first_name: user.full_name?.split(" ")[0] || "",
+          last_name: user.full_name?.split(" ").slice(1).join(" ") || "",
+          email: user.email,
+          role: "Musician",
+          church_id: church.id,
+          user_id: user.id,
+          is_active: true
+        });
+        globalUser = { ...user, ...newMember };
+      } else {
+        globalUser = { ...user, ...members[0] };
+      }
       globalChurch = church;
       onAuth();
     } catch (e) {
-      setError(e.message || "Join failed.");
+      const msg = e?.message || "";
+      if (msg.includes("Invalid") || msg.includes("credentials") || msg.includes("password")) {
+        setError("Incorrect email or password. Please try again.");
+      } else {
+        setError(msg || "Join failed. Please try again.");
+      }
     } finally { setLoading(false); }
   };
 
@@ -272,9 +297,17 @@ function SetupWizard({ onDone, onBack }) {
       if (data.password.length < 6) throw new Error("Password must be at least 6 characters.");
       if (!data.churchName) throw new Error("Church name is required.");
 
-      const user = await base44.auth.register(data.email, data.password, `${data.firstName} ${data.lastName}`);
-      if (!user) throw new Error("Registration failed. Email may already be in use.");
+      // Step 1: Register the account
+      await base44.auth.register({ email: data.email, password: data.password });
 
+      // Step 2: Log in to get a valid session token
+      const { user } = await base44.auth.loginViaEmailPassword(data.email, data.password);
+      if (!user) throw new Error("Registration succeeded but login failed. Please sign in manually.");
+
+      // Step 3: Set the full name on the user profile
+      await base44.auth.updateMe({ full_name: `${data.firstName} ${data.lastName}` });
+
+      // Step 4: Create the church workspace
       const teamCode = Math.random().toString(36).substring(2, 10).toUpperCase();
       const church = await ChurchEntity.create({
         name: data.churchName, city: data.city, state: data.state, website: data.website,
@@ -283,17 +316,26 @@ function SetupWizard({ onDone, onBack }) {
         team_code: teamCode, admin_user_id: user.id
       });
 
+      // Step 5: Create the admin's church member profile
       const member = await ChurchMemberEntity.create({
         first_name: data.firstName, last_name: data.lastName, email: data.email,
         instrument: data.instrument, role: "Admin", church_id: church.id,
-        avatar_is_active: true, user_id: user.id
+        is_active: true, user_id: user.id
       });
 
-      globalUser = { ...user, ...member };
+      // Step 6: Set globals and proceed to dashboard
+      globalUser = { ...user, ...member, full_name: `${data.firstName} ${data.lastName}` };
       globalChurch = church;
       onDone();
     } catch (e) {
-      setError(e.message || "Setup failed. Please try again.");
+      const msg = e?.message || "";
+      if (msg.includes("already") || msg.includes("exists") || msg.includes("registered")) {
+        setError("An account with this email already exists. Please sign in instead.");
+      } else if (msg.includes("password")) {
+        setError(msg);
+      } else {
+        setError(msg || "Setup failed. Please try again.");
+      }
     } finally { setLoading(false); }
   };
 
@@ -869,18 +911,23 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const isLoggedIn = await base44.auth.isAuthenticated();
+        if (!isLoggedIn) return;
         const user = await base44.auth.me();
         if (user) {
           const members = await ChurchMemberEntity.filter({ user_id: user.id });
           if (members.length > 0) {
-            const churches = await ChurchEntity.filter({ id: members[0].church_id });
+            const [churchList] = await Promise.all([
+              ChurchEntity.filter({ id: members[0].church_id })
+            ]);
             globalUser = { ...user, ...members[0] };
-            globalChurch = churches[0] || null;
+            globalChurch = churchList[0] || null;
             setAuthed(true);
           }
         }
-      } catch (e) {}
-      finally { setChecking(false); }
+      } catch (e) {
+        // Not authenticated — show login screen
+      } finally { setChecking(false); }
     };
     checkAuth();
   }, []);
@@ -895,5 +942,12 @@ export default function Home() {
   );
 
   if (!authed) return <LoginScreen onAuth={() => setAuthed(true)} />;
-  return <MainApp onLogout={() => { setAuthed(false); globalUser=null; globalChurch=null; }} />;
+  const handleLogout = () => {
+    globalUser = null;
+    globalChurch = null;
+    setAuthed(false);
+    base44.auth.logout();
+  };
+
+  return <MainApp onLogout={handleLogout} />;
 }
