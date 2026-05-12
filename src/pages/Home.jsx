@@ -81,7 +81,10 @@ function LoginScreen({ onAuth }) {
   const [joinPassword, setJoinPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showSetup, setShowSetup] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   const handleSignIn = async () => {
     setError(""); setLoading(true);
@@ -143,6 +146,22 @@ function LoginScreen({ onAuth }) {
     } finally { setLoading(false); }
   };
 
+  const handleForgotPassword = async () => {
+    setError(""); setSuccess(""); setLoading(true);
+    try {
+      if (!resetEmail.trim()) throw new Error("Please enter your email address.");
+      await base44.auth.resetPasswordRequest(resetEmail.trim());
+      setSuccess("Password reset email sent! Check your inbox (and spam folder).");
+    } catch (e) {
+      const msg = e?.message || "";
+      if (msg.includes("not found") || msg.includes("no user") || msg.includes("exist")) {
+        setError("No account found with that email address.");
+      } else {
+        setError(msg || "Failed to send reset email. Please try again.");
+      }
+    } finally { setLoading(false); }
+  };
+
   if (showSetup) return <SetupWizard onDone={onAuth} onBack={() => setShowSetup(false)} />;
 
   return (
@@ -174,7 +193,7 @@ function LoginScreen({ onAuth }) {
             {[{ id: "signin", label: "Sign In" }, { id: "join", label: "Join My Church" }, { id: "new", label: "New Church" }].map(t => (
               <button
                 key={t.id}
-                onClick={() => { setTab(t.id); setError(""); }}
+                onClick={() => { setTab(t.id); setError(""); setSuccess(""); setShowForgotPassword(false); }}
                 className={`flex-1 text-[11px] uppercase tracking-wider py-2.5 rounded-md font-bold transition-all duration-300 ${tab === t.id ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
               >
                 {t.label}
@@ -184,29 +203,63 @@ function LoginScreen({ onAuth }) {
 
           <AnimatePresence mode="wait">
             {error && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+              <motion.div key="err" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
                 <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
                   <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
                   <p className="text-xs font-medium text-destructive">{error}</p>
                 </div>
               </motion.div>
             )}
+            {success && (
+              <motion.div key="ok" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+                <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2.5">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <p className="text-xs font-medium text-primary">{success}</p>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
-          {tab === "signin" && (
+          {tab === "signin" && !showForgotPassword && (
             <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <div>
                 <Label className="text-xs font-medium text-muted-foreground ml-1">Email Address</Label>
                 <Input value={signInEmail} onChange={e => setSignInEmail(e.target.value)} placeholder="you@yourchurch.com" type="email" className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm focus:bg-background transition-colors" />
               </div>
               <div>
-                <Label className="text-xs font-medium text-muted-foreground ml-1">Password</Label>
-                <Input value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="••••••••" type="password" className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm focus:bg-background transition-colors" onKeyDown={e => e.key === "Enter" && handleSignIn()} />
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground ml-1">Password</Label>
+                  <button
+                    onClick={() => { setShowForgotPassword(true); setResetEmail(signInEmail); setError(""); setSuccess(""); }}
+                    className="text-[11px] text-primary hover:underline font-semibold transition-all"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                <Input value={signInPassword} onChange={e => setSignInPassword(e.target.value)} placeholder="••••••••" type="password" className="bg-background/50 border-border/50 text-foreground text-sm focus:bg-background transition-colors" onKeyDown={e => e.key === "Enter" && handleSignIn()} />
               </div>
               <Button onClick={handleSignIn} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all relative overflow-hidden mt-2">
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
               </Button>
+            </motion.div>
+          )}
+
+          {tab === "signin" && showForgotPassword && (
+            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">Reset your password</p>
+                <p className="text-xs text-muted-foreground mb-4">Enter your email and we'll send you a reset link.</p>
+                <Label className="text-xs font-medium text-muted-foreground ml-1">Email Address</Label>
+                <Input value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@yourchurch.com" type="email" className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm focus:bg-background transition-colors" onKeyDown={e => e.key === "Enter" && handleForgotPassword()} />
+              </div>
+              <Button onClick={handleForgotPassword} disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all relative overflow-hidden">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send Reset Email"}
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
+              </Button>
+              <button onClick={() => { setShowForgotPassword(false); setError(""); setSuccess(""); }} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">
+                ← Back to Sign In
+              </button>
             </motion.div>
           )}
 
