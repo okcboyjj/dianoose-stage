@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Library, Star, Guitar, Users, Calendar, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, ChevronRight, Save, Printer, Edit3, Eye, Trash2, Copy, Send, Check, ChevronDown, Clock, MapPin, Link as LinkIcon, ArrowRight, AlertCircle, Loader2, MoreVertical, BookOpen, Zap, Flame } from "lucide-react";
+import { Music, Home as HomeIcon, List, Library, Star, Guitar, Users, Calendar, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, ChevronRight, Save, Printer, Edit3, Eye, Trash2, Copy, Send, Check, ChevronDown, Clock, MapPin, Link as LinkIcon, ArrowRight, AlertCircle, Loader2, MoreVertical, BookOpen, Zap, Flame, Mail } from "lucide-react";
 
 const SongEntity = base44.entities.Song;
 const ServiceEntity = base44.entities.Service;
@@ -85,6 +85,7 @@ function LoginScreen({ onAuth }) {
   const [showSetup, setShowSetup] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
+  const [pendingVerification, setPendingVerification] = useState(null);
 
   const handleSignIn = async () => {
     setError(""); setLoading(true);
@@ -132,7 +133,8 @@ function LoginScreen({ onAuth }) {
       } else if (msg === "no_church") {
         setError("Your account isn't linked to a church yet. Use the 'Join My Church' tab to connect, or create a new workspace.");
       } else if (msg.includes("verify") || msg.includes("confirm") || msg.includes("email")) {
-        setError("Please verify your email address before signing in. Check your inbox for a verification email.");
+        // Show verification screen so they can enter their code
+        setPendingVerification({ email: signInEmail.trim(), password: signInPassword });
       } else {
         setError("Sign in failed. Please check your connection and try again.");
       }
@@ -208,6 +210,33 @@ function LoginScreen({ onAuth }) {
       }
     } finally { setLoading(false); }
   };
+
+  const handleVerifiedSignIn = async (user) => {
+    // After email verification during sign-in, load their church/member profile
+    const members = await ChurchMemberEntity.filter({ user_id: user.id });
+    if (members.length > 0) {
+      const churches = await ChurchEntity.filter({ id: members[0].church_id });
+      globalUser = { ...user, ...members[0] };
+      globalChurch = churches[0] || null;
+      onAuth();
+    } else {
+      // No church yet after verification — go back to login to join/create
+      setPendingVerification(null);
+      setTab("new");
+      setError("Email verified! Now set up or join your church workspace.");
+    }
+  };
+
+  if (pendingVerification) {
+    return (
+      <VerifyEmailScreen
+        email={pendingVerification.email}
+        password={pendingVerification.password}
+        onVerified={handleVerifiedSignIn}
+        onBack={() => setPendingVerification(null)}
+      />
+    );
+  }
 
   if (showSetup) return <SetupWizard onDone={onAuth} onBack={() => setShowSetup(false)} />;
 
@@ -360,11 +389,142 @@ function LoginScreen({ onAuth }) {
   );
 }
 
+// ─── Email Verification Screen ────────────────────────────────────────────────
+function VerifyEmailScreen({ email, password, onVerified, onBack }) {
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleVerify = async () => {
+    setError(""); setLoading(true);
+    try {
+      if (!code.trim()) throw new Error("Please enter the verification code from your email.");
+      await base44.auth.verifyEmail(code.trim());
+      // After verification, log in to establish session
+      const { user } = await base44.auth.loginViaEmailPassword(email, password);
+      if (!user) throw new Error("Verification succeeded but login failed. Please use the Sign In tab.");
+      onVerified(user);
+    } catch (e) {
+      const msg = (e?.message || "").toLowerCase();
+      if (msg.includes("invalid") || msg.includes("incorrect") || msg.includes("wrong") || msg.includes("mismatch")) {
+        setError("That code is incorrect. Double-check your email and try again.");
+      } else if (msg.includes("expired") || msg.includes("expir")) {
+        setError("This code has expired. Use 'Resend Code' to get a fresh one.");
+      } else if (msg.includes("already") || msg.includes("verified")) {
+        setError("This email is already verified. Please use the Sign In tab.");
+      } else if (msg.includes("login failed")) {
+        setError(e.message);
+      } else {
+        setError(e.message || "Verification failed. Please try again.");
+      }
+    } finally { setLoading(false); }
+  };
+
+  const handleResend = async () => {
+    setError(""); setSuccess(""); setResending(true);
+    try {
+      await base44.auth.resendVerificationEmail(email);
+      setSuccess("A new code was sent! Check your inbox (and spam folder).");
+    } catch (e) {
+      setError("Could not resend the code. Please wait a moment and try again.");
+    } finally { setResending(false); }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center relative">
+      <GlobalStyles />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/15 via-background to-background" />
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
+
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[420px] mx-4 relative z-10"
+      >
+        <div className="glass-panel rounded-2xl p-8 shadow-2xl shadow-black/40">
+          <div className="text-center mb-8">
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/20">
+              <Mail className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground tracking-tight">Check Your Email</h1>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              We sent a verification code to<br />
+              <span className="text-foreground font-semibold">{email}</span>
+            </p>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div key="err" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+                <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
+                  <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+                  <p className="text-xs font-medium text-destructive">{error}</p>
+                </div>
+              </motion.div>
+            )}
+            {success && (
+              <motion.div key="ok" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+                <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2.5">
+                  <Check className="w-4 h-4 text-primary shrink-0" />
+                  <p className="text-xs font-medium text-primary">{success}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground ml-1">Verification Code</Label>
+              <Input
+                value={code}
+                onChange={e => setCode(e.target.value)}
+                placeholder="Enter code from your email"
+                className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm font-mono tracking-widest text-center focus:bg-background transition-colors"
+                onKeyDown={e => e.key === "Enter" && handleVerify()}
+                autoFocus
+              />
+            </div>
+
+            <Button
+              onClick={handleVerify}
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all relative overflow-hidden"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-4 h-4 mr-2" /> Verify &amp; Continue</>}
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite] bg-[length:200%_100%]" />
+            </Button>
+
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={onBack}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handleResend}
+                disabled={resending}
+                className="text-xs text-primary font-semibold hover:underline transition-all disabled:opacity-50"
+              >
+                {resending ? "Sending..." : "Resend Code"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Setup Wizard ─────────────────────────────────────────────────────────────
 function SetupWizard({ onDone, onBack }) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [pendingVerification, setPendingVerification] = useState(null); // { email, password }
   const [data, setData] = useState({
     churchName: "", city: "", state: "", website: "",
     serviceDay: "Sunday", serviceTime: "10:00", serviceName: "Morning Worship", timezone: "Eastern (ET)",
@@ -389,6 +549,46 @@ function SetupWizard({ onDone, onBack }) {
     { title: "Create Admin Account", icon: Shield, subtitle: "This is your main administrator account." }
   ];
 
+  const completeWorkspaceSetup = async (user) => {
+    // Called after email is verified and session is established
+    await base44.auth.updateMe({ full_name: `${data.firstName.trim()} ${data.lastName.trim()}` });
+
+    const teamCode = [
+      Math.random().toString(36).substring(2, 5),
+      Math.random().toString(36).substring(2, 5)
+    ].join("").toUpperCase().replace(/[^A-Z0-9]/g, "X").substring(0, 8);
+
+    const church = await ChurchEntity.create({
+      name: data.churchName.trim(),
+      city: data.city.trim(),
+      state: data.state.trim(),
+      website: data.website.trim(),
+      service_day: data.serviceDay,
+      service_time: data.serviceTime,
+      service_name: data.serviceName.trim(),
+      timezone: data.timezone,
+      accent_color: data.accentColor,
+      app_icon: data.appIcon,
+      team_code: teamCode,
+      admin_user_id: user.id
+    });
+
+    const member = await ChurchMemberEntity.create({
+      first_name: data.firstName.trim(),
+      last_name: data.lastName.trim(),
+      email: data.email.trim(),
+      instrument: data.instrument.trim(),
+      role: "Admin",
+      church_id: church.id,
+      is_active: true,
+      user_id: user.id
+    });
+
+    globalUser = { ...user, ...member, full_name: `${data.firstName.trim()} ${data.lastName.trim()}` };
+    globalChurch = church;
+    onDone();
+  };
+
   const handleFinish = async () => {
     setError(""); setLoading(true);
     try {
@@ -399,53 +599,27 @@ function SetupWizard({ onDone, onBack }) {
       if (data.password !== data.confirmPassword) throw new Error("Passwords don't match. Please re-enter.");
       if (!data.churchName.trim()) throw new Error("Church name is required.");
 
-      // Step 1: Register auth account
+      // Register — this sends a verification email
       await base44.auth.register({ email: data.email.trim(), password: data.password });
 
-      // Step 2: Log in immediately to establish session
-      const { user } = await base44.auth.loginViaEmailPassword(data.email.trim(), data.password);
-      if (!user) throw new Error("Account created but login failed. Please sign in from the Sign In tab.");
-
-      // Step 3: Set full name on auth profile
-      await base44.auth.updateMe({ full_name: `${data.firstName.trim()} ${data.lastName.trim()}` });
-
-      // Step 4: Generate unique team code and create church workspace
-      const teamCode = [
-        Math.random().toString(36).substring(2, 5),
-        Math.random().toString(36).substring(2, 5)
-      ].join("").toUpperCase().replace(/[^A-Z0-9]/g, "X").substring(0, 8);
-
-      const church = await ChurchEntity.create({
-        name: data.churchName.trim(),
-        city: data.city.trim(),
-        state: data.state.trim(),
-        website: data.website.trim(),
-        service_day: data.serviceDay,
-        service_time: data.serviceTime,
-        service_name: data.serviceName.trim(),
-        timezone: data.timezone,
-        accent_color: data.accentColor,
-        app_icon: data.appIcon,
-        team_code: teamCode,
-        admin_user_id: user.id
-      });
-
-      // Step 5: Create admin member profile and link to church
-      const member = await ChurchMemberEntity.create({
-        first_name: data.firstName.trim(),
-        last_name: data.lastName.trim(),
-        email: data.email.trim(),
-        instrument: data.instrument.trim(),
-        role: "Admin",
-        church_id: church.id,
-        is_active: true,
-        user_id: user.id
-      });
-
-      // Step 6: Set globals and enter dashboard
-      globalUser = { ...user, ...member, full_name: `${data.firstName.trim()} ${data.lastName.trim()}` };
-      globalChurch = church;
-      onDone();
+      // Try logging in immediately; if email verification is required, this will fail
+      // and we catch it to show the verification screen
+      try {
+        const { user } = await base44.auth.loginViaEmailPassword(data.email.trim(), data.password);
+        if (user) {
+          // Verification not required (or auto-verified) — proceed directly
+          await completeWorkspaceSetup(user);
+          return;
+        }
+      } catch (loginErr) {
+        const loginMsg = (loginErr?.message || "").toLowerCase();
+        if (loginMsg.includes("verify") || loginMsg.includes("confirm") || loginMsg.includes("email")) {
+          // Email verification required — show verify screen
+          setPendingVerification({ email: data.email.trim(), password: data.password });
+          return;
+        }
+        throw loginErr;
+      }
     } catch (e) {
       const msg = (e?.message || "").toLowerCase();
       if (msg.includes("already") || msg.includes("exists") || msg.includes("registered") || msg.includes("duplicate") || msg.includes("taken")) {
@@ -454,8 +628,6 @@ function SetupWizard({ onDone, onBack }) {
         setError(e.message);
       } else if (msg.includes("name") || msg.includes("church") || msg.includes("email") || msg.includes("please")) {
         setError(e.message);
-      } else if (msg.includes("login failed")) {
-        setError(e.message);
       } else {
         setError("Setup failed. Please check your connection and try again.");
       }
@@ -463,6 +635,17 @@ function SetupWizard({ onDone, onBack }) {
   };
 
   const CurrentIcon = steps[step].icon;
+
+  if (pendingVerification) {
+    return (
+      <VerifyEmailScreen
+        email={pendingVerification.email}
+        password={pendingVerification.password}
+        onVerified={completeWorkspaceSetup}
+        onBack={() => setPendingVerification(null)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
