@@ -397,21 +397,29 @@ function VerifyEmailScreen({ email, password, onVerified, onBack }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
   const handleVerify = async () => {
     setError(""); setLoading(true);
     try {
       if (!code.trim()) throw new Error("Please enter the verification code from your email.");
-      await base44.auth.verifyEmail(code.trim());
+      await base44.auth.verifyOtp({ email, otpCode: code.trim() });
       // After verification, log in to establish session
       const { user } = await base44.auth.loginViaEmailPassword(email, password);
       if (!user) throw new Error("Verification succeeded but login failed. Please use the Sign In tab.");
       onVerified(user);
     } catch (e) {
       const msg = (e?.message || "").toLowerCase();
-      if (msg.includes("invalid") || msg.includes("incorrect") || msg.includes("wrong") || msg.includes("mismatch")) {
+      if (msg.includes("invalid") || msg.includes("incorrect") || msg.includes("wrong") || msg.includes("mismatch") || msg.includes("not found")) {
         setError("That code is incorrect. Double-check your email and try again.");
       } else if (msg.includes("expired") || msg.includes("expir")) {
-        setError("This code has expired. Use 'Resend Code' to get a fresh one.");
+        setError("This code has expired. Click 'Resend Code' to get a fresh one.");
       } else if (msg.includes("already") || msg.includes("verified")) {
         setError("This email is already verified. Please use the Sign In tab.");
       } else if (msg.includes("login failed")) {
@@ -423,12 +431,20 @@ function VerifyEmailScreen({ email, password, onVerified, onBack }) {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0) return;
     setError(""); setSuccess(""); setResending(true);
     try {
-      await base44.auth.resendVerificationEmail(email);
+      await base44.auth.resendOtp(email);
       setSuccess("A new code was sent! Check your inbox (and spam folder).");
+      setCode("");
+      setResendCooldown(60);
     } catch (e) {
-      setError("Could not resend the code. Please wait a moment and try again.");
+      const msg = (e?.message || "").toLowerCase();
+      if (msg.includes("rate") || msg.includes("limit") || msg.includes("too many")) {
+        setError("Too many requests. Please wait a minute before trying again.");
+      } else {
+        setError("Could not resend the code. Please wait a moment and try again.");
+      }
     } finally { setResending(false); }
   };
 
@@ -506,10 +522,10 @@ function VerifyEmailScreen({ email, password, onVerified, onBack }) {
               </button>
               <button
                 onClick={handleResend}
-                disabled={resending}
+                disabled={resending || resendCooldown > 0}
                 className="text-xs text-primary font-semibold hover:underline transition-all disabled:opacity-50"
               >
-                {resending ? "Sending..." : "Resend Code"}
+                {resending ? "Sending..." : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
               </button>
             </div>
           </div>
