@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe } from "lucide-react";
+const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 
 const ServicesSection = lazy(() => import("@/components/app/ServicesSection"));
 const MyLibrarySection = lazy(() => import("@/components/app/MyLibrarySection"));
@@ -921,7 +922,9 @@ function SongModal({ song, onClose, onSave, churchId }) {
     bpm: song?.bpm || "", time_signature: song?.time_signature || "4/4", capo: song?.capo || 0,
     youtube_url: song?.youtube_url || "", chart_content: song?.chart_content || "",
     guitar_patch_notes: song?.guitar_patch_notes || "", keys_patch_notes: song?.keys_patch_notes || "",
-    production_notes: song?.production_notes || ""
+    production_notes: song?.production_notes || "", rehearsal_notes: song?.rehearsal_notes || "",
+    arrangement_notes: song?.arrangement_notes || "", is_favorite: song?.is_favorite || false,
+    category: song?.category || "", tags: song?.tags || []
   });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -937,12 +940,25 @@ function SongModal({ song, onClose, onSave, churchId }) {
     finally { setSaving(false); }
   };
 
+  const TABS = [
+    { id: "details", label: "Details" },
+    { id: "chart", label: "📄 Chart" },
+    { id: "patches", label: "🎭 Patches" },
+    { id: "rehearsal", label: "🎵 Rehearsal" },
+    { id: "prod", label: "🎬 Prod" },
+  ];
+
   return (
-    <ModalWrapper onClose={onClose} title={song?.id ? "Edit Song" : "New Song"} actionButton={<Badge variant="outline" className="text-xs border-primary/30 text-primary cursor-pointer hover:bg-primary/10 transition-colors"><Star className="w-3 h-3 mr-1 inline" /> My Library</Badge>}>
-      <div className="flex gap-1 px-6 pt-3 pb-2 bg-secondary/10 border-b border-border/50 overflow-x-auto">
-        {["details", "chart", "patches", "prod"].map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 rounded-lg text-xs font-semibold capitalize transition-all whitespace-nowrap ${tab === t ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
-            {t === "chart" ? "📄 Chart" : t === "patches" ? "🎭 Patches" : t === "prod" ? "🎬 Prod" : "Details"}
+    <ModalWrapper onClose={onClose} title={song?.id ? "Edit Song" : "New Song"} actionButton={
+      <button onClick={() => set("is_favorite", !form.is_favorite)} className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-all ${form.is_favorite ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-500" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
+        <Star className={`w-3.5 h-3.5 ${form.is_favorite ? "fill-yellow-500" : ""}`} />
+        {form.is_favorite ? "Favorited" : "Favorite"}
+      </button>
+    }>
+      <div className="flex gap-1 px-4 pt-3 pb-2 bg-secondary/10 border-b border-border/50 overflow-x-auto">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${tab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}>
+            {t.label}
           </button>
         ))}
       </div>
@@ -955,31 +971,39 @@ function SongModal({ song, onClose, onSave, churchId }) {
                   <div><Label className="text-xs font-medium text-muted-foreground ml-1">Title</Label><Input value={form.title} onChange={e => set("title", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
                   <div><Label className="text-xs font-medium text-muted-foreground ml-1">Artist</Label><Input value={form.artist} onChange={e => set("artist", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   <div><Label className="text-xs font-medium text-muted-foreground ml-1">Key</Label><Input value={form.key} onChange={e => set("key", e.target.value)} placeholder="G, A, Bb..." className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
                   <div><Label className="text-xs font-medium text-muted-foreground ml-1">BPM</Label><Input type="number" value={form.bpm} onChange={e => set("bpm", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
+                  <div><Label className="text-xs font-medium text-muted-foreground ml-1">Capo</Label><Input type="number" value={form.capo} onChange={e => set("capo", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label className="text-xs font-medium text-muted-foreground ml-1">Time Sig</Label><Input value={form.time_signature} onChange={e => set("time_signature", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
-                  <div><Label className="text-xs font-medium text-muted-foreground ml-1">Capo</Label><Input type="number" value={form.capo} onChange={e => set("capo", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
+                  <div><Label className="text-xs font-medium text-muted-foreground ml-1">Category</Label><Input value={form.category} onChange={e => set("category", e.target.value)} placeholder="Worship, Hymn..." className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
                 </div>
                 <div><Label className="text-xs font-medium text-muted-foreground ml-1">YouTube / Reference</Label><Input value={form.youtube_url} onChange={e => set("youtube_url", e.target.value)} placeholder="https://youtube.com/..." type="url" className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
+                <div><Label className="text-xs font-medium text-muted-foreground ml-1">Tags (comma separated)</Label><Input value={(form.tags || []).join(", ")} onChange={e => set("tags", e.target.value.split(",").map(t => t.trim()).filter(Boolean))} placeholder="worship, contemporary, anthem..." className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
               </div>
             )}
             {tab === "chart" && (
               <div className="space-y-3">
                 <p className="text-[11px] text-muted-foreground bg-secondary/30 rounded-lg p-3 border border-border/50 font-medium"><b className="text-foreground">[Verse 1]</b> = section header &nbsp;|&nbsp; <b className="text-foreground">G Em C D</b> = chord line &nbsp;|&nbsp; lyrics on next line</p>
-                <Textarea value={form.chart_content} onChange={e => set("chart_content", e.target.value)} placeholder="Paste or type chart here..." rows={12} className="bg-background/50 border-border/50 text-foreground text-sm font-mono leading-relaxed resize-none focus:bg-background" />
+                <Textarea value={form.chart_content} onChange={e => set("chart_content", e.target.value)} placeholder="Paste or type chart here..." rows={14} className="bg-background/50 border-border/50 text-foreground text-sm font-mono leading-relaxed resize-none focus:bg-background" />
               </div>
             )}
             {tab === "patches" && (
               <div className="space-y-5">
-                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Guitar Patch Notes</Label><Textarea value={form.guitar_patch_notes} onChange={e => set("guitar_patch_notes", e.target.value)} placeholder="Guitar patches, effects chain..." rows={5} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
-                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Keys / Piano</Label><Textarea value={form.keys_patch_notes} onChange={e => set("keys_patch_notes", e.target.value)} placeholder="Keys patches, sounds..." rows={5} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
+                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Guitar Patch Notes</Label><Textarea value={form.guitar_patch_notes} onChange={e => set("guitar_patch_notes", e.target.value)} placeholder="Guitar patches, effects chain, amp settings..." rows={5} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
+                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Keys / Piano</Label><Textarea value={form.keys_patch_notes} onChange={e => set("keys_patch_notes", e.target.value)} placeholder="Keys patches, sounds, presets..." rows={5} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
+              </div>
+            )}
+            {tab === "rehearsal" && (
+              <div className="space-y-5">
+                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Rehearsal Notes</Label><Textarea value={form.rehearsal_notes} onChange={e => set("rehearsal_notes", e.target.value)} placeholder="What to focus on in rehearsal, dynamics, transitions..." rows={6} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
+                <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Arrangement Notes</Label><Textarea value={form.arrangement_notes} onChange={e => set("arrangement_notes", e.target.value)} placeholder="Song arrangement, section order, length, endings..." rows={6} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
               </div>
             )}
             {tab === "prod" && (
-              <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Production Notes</Label><Textarea value={form.production_notes} onChange={e => set("production_notes", e.target.value)} placeholder="Lighting cues, video notes, sound notes..." rows={12} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
+              <div><Label className="text-xs font-medium text-muted-foreground ml-1 mb-2 block">Production Notes</Label><Textarea value={form.production_notes} onChange={e => set("production_notes", e.target.value)} placeholder="Lighting cues, video notes, sound notes, stage plot..." rows={14} className="bg-background/50 border-border/50 text-foreground text-sm resize-none" /></div>
             )}
           </motion.div>
         </AnimatePresence>
@@ -1010,6 +1034,7 @@ function MainApp({ onLogout }) {
   const [memberSearch, setMemberSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("All");
   const [songKeyFilter, setSongKeyFilter] = useState("All");
+  const [songLibTab, setSongLibTab] = useState("church");
 
   const church = globalChurch;
   const user = globalUser;
@@ -1150,46 +1175,76 @@ function MainApp({ onLogout }) {
           <div className="flex sm:items-center justify-between flex-col sm:flex-row gap-4">
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Song Library</h1>
-              <p className="text-sm text-muted-foreground font-medium">{songs.length} songs available</p>
+              <p className="text-sm text-muted-foreground font-medium">{songs.length} church songs · 62 in global catalog</p>
             </div>
             <Button onClick={() => { setEditSong(null); setShowSongModal(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"><Plus className="w-4 h-4 mr-2" /> Add Song</Button>
           </div>
         </AnimatedElement>
 
-        <AnimatedElement delay={100}>
-          <div className="flex gap-3 flex-col sm:flex-row">
-            <div className="flex-1 flex items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-              <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 font-medium" />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
-              {["All", "G", "A", "B", "C", "D", "E", "F"].map(k => (
-                <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
-              ))}
-            </div>
-          </div>
-        </AnimatedElement>
+        {/* Tab switcher */}
+        <div className="flex bg-secondary/30 rounded-xl p-1 border border-border/30 w-fit">
+          {[{ id: "church", label: "My Songs", icon: Music }, { id: "global", label: "Global Catalog", icon: Globe }].map(t => (
+            <button key={t.id} onClick={() => setSongLibTab(t.id)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${songLibTab === t.id ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
+              <t.icon className="w-3.5 h-3.5" />{t.label}
+            </button>
+          ))}
+        </div>
 
-        <div className="grid gap-3">
-          {songs.filter(s => (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter)).map((song, i) => (
-            <AnimatedElement key={song.id} delay={i * 50 + 200}>
-              <div onClick={() => { setEditSong(song); setShowSongModal(true); }} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-5 hover:shadow-lg hover:-translate-y-0.5">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <Music className="w-5 h-5 text-primary" />
+        {songLibTab === "global" ? (
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>}>
+            <GlobalSongLibrary churchId={church?.id} churchSongs={songs} onSongCloned={() => loadData("songs")} />
+          </Suspense>
+        ) : (
+          <>
+            <AnimatedElement delay={100}>
+              <div className="flex gap-3 flex-col sm:flex-row">
+                <div className="flex-1 flex items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 font-medium" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">{song.title}</p>
-                  <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">{song.artist}</p>
-                </div>
-                <div className="flex items-center gap-4 shrink-0">
-                  {song.key && <span className="text-xs bg-primary/10 border border-primary/20 text-primary rounded-lg px-3 py-1 font-bold">{song.key}</span>}
-                  {song.bpm && <span className="text-xs text-muted-foreground font-medium hidden sm:block">{song.bpm} BPM</span>}
-                  <button onClick={async (e) => { e.stopPropagation(); await SongEntity.delete(song.id); loadData(); }} className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
+                  {["All", "★", "G", "A", "B", "C", "D", "E", "F"].map(k => (
+                    <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
+                  ))}
                 </div>
               </div>
             </AnimatedElement>
-          ))}
-        </div>
+
+            <div className="grid gap-3">
+              {songs.filter(s => {
+                if (songKeyFilter === "★") return s.is_favorite;
+                return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
+              }).map((song, i) => (
+                <AnimatedElement key={song.id} delay={i * 40 + 100}>
+                  <div onClick={() => { setEditSong(song); setShowSongModal(true); }} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-4 hover:shadow-lg hover:-translate-y-0.5">
+                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                      <Music className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">{song.title}</p>
+                        {song.is_favorite && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">{song.artist}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      {song.key && <span className="text-xs bg-primary/10 border border-primary/20 text-primary rounded-lg px-2.5 py-1 font-bold">{song.key}</span>}
+                      {song.bpm && <span className="text-xs text-muted-foreground font-medium hidden sm:block">{song.bpm}</span>}
+                      <button onClick={async (e) => { e.stopPropagation(); await SongEntity.delete(song.id); loadData(); }} className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </AnimatedElement>
+              ))}
+              {songs.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No songs yet.</p>
+                  <p className="text-xs mt-1">Browse the <button onClick={() => setSongLibTab("global")} className="text-primary underline">Global Catalog</button> to add songs instantly.</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     );
 
