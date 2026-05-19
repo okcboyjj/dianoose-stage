@@ -46,6 +46,21 @@ const GlobalStyles = () => (
       backdrop-filter: blur(12px);
       border: 1px solid hsl(var(--border) / 0.5);
     }
+    .song-card {
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+      will-change: transform;
+    }
+    .song-card:hover {
+      border-color: hsl(var(--primary) / 0.55);
+      box-shadow: 0 0 22px hsl(var(--primary) / 0.12), 0 8px 20px rgba(0,0,0,0.35);
+      transform: translateY(-2px);
+    }
+    .song-card .top-glow {
+      transition: opacity 0.15s;
+    }
+    .song-card:hover .top-glow {
+      opacity: 1 !important;
+    }
   `}</style>
 );
 
@@ -1027,23 +1042,12 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
   const extraSections = sections.length > 3 ? sections.length - 3 : 0;
 
   return (
-    <motion.div
-      whileHover={{ y: -3, scale: 1.005 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    <div
       onClick={() => onPreview(song, 'chart')}
-      className="relative bg-[#1a1a2c] border border-white/10 rounded-xl p-4 flex flex-col gap-3 cursor-pointer group overflow-hidden"
-      style={{ transition: 'border-color 0.2s, box-shadow 0.2s' }}
-      onMouseEnter={e => {
-        e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.6)';
-        e.currentTarget.style.boxShadow = '0 0 24px hsl(var(--primary) / 0.12), 0 8px 24px rgba(0,0,0,0.4)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-        e.currentTarget.style.boxShadow = 'none';
-      }}
+      className="song-card relative bg-[#1a1a2c] border border-white/10 rounded-xl p-4 flex flex-col gap-3 cursor-pointer group overflow-hidden"
     >
       {/* Subtle top glow line */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="top-glow absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0" />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
@@ -1087,24 +1091,24 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
       <div className="flex gap-1.5 pt-1 border-t border-white/8">
         <button
           onClick={e => { e.stopPropagation(); onEdit(song); }}
-          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all"
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-colors"
         >
           ⌘ Edit
         </button>
         <button
           onClick={e => { e.stopPropagation(); onPreview(song, 'chart'); }}
-          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-white/4 hover:bg-primary/10 rounded-lg py-1.5 transition-all"
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-white/4 hover:bg-primary/10 rounded-lg py-1.5 transition-colors"
         >
           📄 Chart
         </button>
         <button
           onClick={e => { e.stopPropagation(); onPreview(song, 'patches'); }}
-          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all"
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-colors"
         >
           🎛 Patch
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -1132,10 +1136,10 @@ function MainApp({ onLogout }) {
   const user = globalUser;
   const isAdmin = user?.role === "Admin" || user?.role === "Worship Leader";
 
-  const loadData = useCallback(async (section) => {
+  const loadData = useCallback(async (section, showSpinner = false) => {
     section = section ?? activeSection;
     if (!church?.id) return;
-    setLoading(true);
+    if (showSpinner) setLoading(true);
     const uid = user?.user_id || user?.id;
     try {
       // Always fetch songs + services (needed for dashboard stats too)
@@ -1164,8 +1168,13 @@ function MainApp({ onLogout }) {
     finally { setLoading(false); }
   }, [church?.id, activeSection]);
 
-  // Load data for the current section whenever it changes
-  useEffect(() => { loadData(activeSection); }, [church?.id, activeSection]);
+  // Load data for the current section whenever it changes (show spinner only on first load)
+  const isFirstLoad = useRef(true);
+  useEffect(() => {
+    const spinner = isFirstLoad.current;
+    isFirstLoad.current = false;
+    loadData(activeSection, spinner);
+  }, [church?.id, activeSection]);
 
   const navItems = [
     { id: "dashboard", icon: HomeIcon, label: "Dashboard", group: "Main" },
@@ -1381,9 +1390,7 @@ function MainApp({ onLogout }) {
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scrollbar-hide">
-          {loading ? (
-            <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 text-primary animate-spin" /></div>
-          ) : renderContent()}
+          {renderContent()}
         </div>
       </div>
 
