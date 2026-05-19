@@ -1197,47 +1197,40 @@ function MainApp({ onLogout }) {
           </Suspense>
         ) : (
           <>
-            <AnimatedElement delay={100}>
-              <div className="flex gap-3 flex-col sm:flex-row">
-                <div className="flex-1 flex items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all">
-                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 font-medium" />
-                </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
-                  {["All", "★", "G", "A", "B", "C", "D", "E", "F"].map(k => (
-                    <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
-                  ))}
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-3 bg-card border border-border/40 rounded-xl px-4 py-2.5 focus-within:border-primary/50 transition-all">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1" />
               </div>
-            </AnimatedElement>
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                {["All", "★", "G", "A", "B", "C", "D", "E", "F"].map(k => (
+                  <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
+                ))}
+              </div>
+            </div>
 
-            <div className="grid gap-3">
+            <div className="space-y-2">
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
                 return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
               }).map((song, i) => (
-                <AnimatedElement key={song.id} delay={i * 40 + 100}>
-                  <div onClick={() => { setEditSong(song); setShowSongModal(true); }} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-4 hover:shadow-lg hover:-translate-y-0.5">
-                    {song.artwork_url ? (
-                      <img src={song.artwork_url} alt={song.title} loading="lazy" className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-md" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
-                    ) : null}
-                    <div className={`w-11 h-11 rounded-xl bg-primary/10 items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors ${song.artwork_url ? 'hidden' : 'flex'}`}>
-                      <Music className="w-5 h-5 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">{song.title}</p>
-                        {song.is_favorite && <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate font-medium mt-0.5">{song.artist}</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {song.key && <span className="text-xs bg-primary/10 border border-primary/20 text-primary rounded-lg px-2.5 py-1 font-bold">{song.key}</span>}
-                      {song.bpm && <span className="text-xs text-muted-foreground font-medium hidden sm:block">{song.bpm}</span>}
-                      <button onClick={async (e) => { e.stopPropagation(); await SongEntity.delete(song.id); loadData(); }} className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
-                    </div>
+                <div key={song.id}
+                  onClick={() => { setEditSong(song); setShowSongModal(true); }}
+                  className="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-card border border-border/30 hover:border-primary/40 hover:bg-card/80 transition-all cursor-pointer group"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <Music className="w-4.5 h-4.5 text-primary" />
                   </div>
-                </AnimatedElement>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">{song.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {song.key && <span className="text-xs font-bold bg-primary/15 text-primary border border-primary/25 rounded-lg px-2.5 py-1">{song.key}</span>}
+                    {song.bpm && <span className="text-xs text-muted-foreground font-medium">{song.bpm}</span>}
+                    <button onClick={async (e) => { e.stopPropagation(); await SongEntity.delete(song.id); loadData(); }} className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
               ))}
               {songs.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground">
