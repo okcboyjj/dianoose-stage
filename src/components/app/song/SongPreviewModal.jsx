@@ -220,7 +220,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
   const [activeChord, setActiveChord] = useState(null);
   const [chordView, setChordView] = useState('guitar');
 
-  useEffect(() => { setTab(initialTab); }, [initialTab]);
+  useEffect(() => { setTab(initialTab); setActiveChord(null); setSemitones(0); }, [song?.id]);
 
   // Close on Escape
   useEffect(() => {
@@ -283,7 +283,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
           initial={{ opacity: 0, y: 60, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 40, scale: 0.97 }}
-          transition={{ type: 'spring', duration: 0.45, bounce: 0.18 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
           className="relative w-full max-w-2xl bg-[#14141f] border border-white/10 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/60 flex flex-col max-h-[95vh] sm:max-h-[88vh] overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
@@ -359,15 +359,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
 
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={tab}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.15 }}
-                className="p-5"
-              >
+            <div className="p-5">
                 {/* ── CHART TAB ── */}
                 {tab === 'chart' && (
                   <div className="space-y-3">
@@ -486,8 +478,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                     )}
                   </div>
                 )}
-              </motion.div>
-            </AnimatePresence>
+            </div>
           </div>
 
           {/* Bottom: active chord popup */}
