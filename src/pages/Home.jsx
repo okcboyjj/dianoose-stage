@@ -68,11 +68,11 @@ const GlobalStyles = () => (
 const AnimatedElement = ({ children, className = "", delay = 0 }) => {
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), delay);
+    const timer = setTimeout(() => setIsVisible(true), delay || 30);
     return () => clearTimeout(timer);
   }, [delay]);
   return (
-    <div className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`}>
+    <div className={`transition-all duration-400 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"} ${className}`}>
       {children}
     </div>
   );
@@ -1322,7 +1322,15 @@ function MainApp({ onLogout }) {
       </div>
     );
 
-    const sectionFallback = <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
+    const sectionFallback = (
+      <div className="space-y-4 pb-12 animate-pulse">
+        <div className="h-8 w-48 bg-white/5 rounded-xl" />
+        <div className="h-4 w-72 bg-white/4 rounded-lg" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-32 bg-white/4 rounded-xl border border-white/6" />)}
+        </div>
+      </div>
+    );
 
     if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
