@@ -1326,8 +1326,14 @@ export default function Home() {
   const handleLogout = () => {
     globalUser = null;
     globalChurch = null;
-    setAuthed(false);
-    base44.auth.logout("/");
+    // Clear session cookies/storage client-side without hitting any API route
+    document.cookie.split(";").forEach(c => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/");
+    });
+    localStorage.clear();
+    sessionStorage.clear();
+    // Navigate back to root (auth screen) without any API redirect
+    window.location.replace("/");
   };
 
   return <MainApp onLogout={handleLogout} />;
