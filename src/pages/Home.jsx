@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe } from "lucide-react";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
+const SongPreviewModal = lazy(() => import("@/components/app/song/SongPreviewModal.jsx"));
 
 const ServicesSection = lazy(() => import("@/components/app/ServicesSection"));
 const MyLibrarySection = lazy(() => import("@/components/app/MyLibrarySection"));
@@ -1020,27 +1021,43 @@ function SongModal({ song, onClose, onSave, churchId }) {
 }
 
 // ─── Song Card ────────────────────────────────────────────────────────────────
-function SongCard({ song, onEdit, onDelete, preferredKey }) {
+function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
   const sections = song.arrangement_sections || [];
   const displayKey = preferredKey || song.key;
   const extraSections = sections.length > 3 ? sections.length - 3 : 0;
 
   return (
-    <div className="bg-card border border-border/30 rounded-xl p-4 flex flex-col gap-3 hover:border-primary/40 transition-all group">
+    <motion.div
+      whileHover={{ y: -3, scale: 1.005 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      onClick={() => onPreview(song, 'chart')}
+      className="relative bg-[#1a1a2c] border border-white/10 rounded-xl p-4 flex flex-col gap-3 cursor-pointer group overflow-hidden"
+      style={{ transition: 'border-color 0.2s, box-shadow 0.2s' }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.6)';
+        e.currentTarget.style.boxShadow = '0 0 24px hsl(var(--primary) / 0.12), 0 8px 24px rgba(0,0,0,0.4)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+        e.currentTarget.style.boxShadow = 'none';
+      }}
+    >
+      {/* Subtle top glow line */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground truncate leading-tight">{song.title}</p>
+          <p className="text-sm font-bold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors">{song.title}</p>
           <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Key circle badge */}
           {displayKey && (
-            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
               <span className="text-[10px] font-bold text-primary">{displayKey}</span>
             </div>
           )}
-          <button onClick={(e) => { e.stopPropagation(); }} className="text-muted-foreground hover:text-yellow-400 transition-colors">
+          <button onClick={e => e.stopPropagation()} className="text-muted-foreground hover:text-yellow-400 transition-colors">
             <Star className={`w-4 h-4 ${song.is_favorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
           </button>
         </div>
@@ -1048,8 +1065,8 @@ function SongCard({ song, onEdit, onDelete, preferredKey }) {
 
       {/* Meta pills */}
       <div className="flex flex-wrap gap-1.5">
-        {song.bpm && <span className="text-[10px] font-semibold bg-secondary/60 text-muted-foreground border border-white/10 rounded-full px-2.5 py-0.5">{song.bpm} BPM</span>}
-        {song.time_signature && <span className="text-[10px] font-semibold bg-secondary/60 text-muted-foreground border border-white/10 rounded-full px-2.5 py-0.5">{song.time_signature}</span>}
+        {song.bpm && <span className="text-[10px] font-semibold bg-white/5 text-muted-foreground border border-white/8 rounded-full px-2.5 py-0.5">{song.bpm} BPM</span>}
+        {song.time_signature && <span className="text-[10px] font-semibold bg-white/5 text-muted-foreground border border-white/8 rounded-full px-2.5 py-0.5">{song.time_signature}</span>}
         {Number(song.capo) > 0 && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Capo {song.capo}</span>}
         {song.chart_content && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Chart</span>}
       </div>
@@ -1057,28 +1074,37 @@ function SongCard({ song, onEdit, onDelete, preferredKey }) {
       {/* Arrangement sections */}
       {sections.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {sections.slice(0, 3).map(s => (
-            <span key={s} className="text-[10px] font-semibold bg-secondary/40 text-muted-foreground border border-white/8 rounded-md px-2 py-0.5">{s}</span>
+          {sections.slice(0, 4).map(s => (
+            <span key={s} className="text-[10px] font-semibold bg-white/5 text-muted-foreground border border-white/8 rounded-md px-2 py-0.5">{s}</span>
           ))}
           {extraSections > 0 && (
-            <span className="text-[10px] font-semibold bg-secondary/40 text-muted-foreground border border-white/8 rounded-md px-2 py-0.5">+{extraSections}</span>
+            <span className="text-[10px] font-semibold bg-white/5 text-muted-foreground border border-white/8 rounded-md px-2 py-0.5">+{extraSections}</span>
           )}
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action pills — deep link into tabs */}
       <div className="flex gap-1.5 pt-1 border-t border-white/8">
-        <button onClick={onEdit} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
-          <span>⌘</span> Edit
+        <button
+          onClick={e => { e.stopPropagation(); onEdit(song); }}
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all"
+        >
+          ⌘ Edit
         </button>
-        <button onClick={onEdit} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
+        <button
+          onClick={e => { e.stopPropagation(); onPreview(song, 'chart'); }}
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-white/4 hover:bg-primary/10 rounded-lg py-1.5 transition-all"
+        >
           📄 Chart
         </button>
-        <button className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
-          + Set
+        <button
+          onClick={e => { e.stopPropagation(); onPreview(song, 'patches'); }}
+          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all"
+        >
+          🎛 Patch
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -1094,6 +1120,8 @@ function MainApp({ onLogout }) {
   const [loading, setLoading] = useState(true);
   const [showSongModal, setShowSongModal] = useState(false);
   const [editSong, setEditSong] = useState(null);
+  const [previewSong, setPreviewSong] = useState(null);
+  const [previewTab, setPreviewTab] = useState('chart');
   const [songSearch, setSongSearch] = useState("");
   const [memberSearch, setMemberSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("All");
@@ -1282,6 +1310,7 @@ function MainApp({ onLogout }) {
                   song={song}
                   onEdit={() => { setEditSong(song); setShowSongModal(true); }}
                   onDelete={async () => { await SongEntity.delete(song.id); loadData(); }}
+                  onPreview={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }}
                 />
               ))}
               {songs.length === 0 && (
@@ -1300,7 +1329,7 @@ function MainApp({ onLogout }) {
     const sectionFallback = <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
     if (activeSection === "services") return <Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense>;
-    if (activeSection === "mylibrary") return <Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "mylibrary") return <Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense>;
     if (activeSection === "mystage") return <Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense>;
     if (activeSection === "musicians") return <Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense>;
     if (activeSection === "notifications") return <Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense>;
@@ -1365,6 +1394,16 @@ function MainApp({ onLogout }) {
             onClose={() => setShowSongModal(false)}
             onSave={() => { setShowSongModal(false); loadData(); }}
             churchId={church?.id}
+          />
+        </Suspense>
+      )}
+      {previewSong && (
+        <Suspense fallback={null}>
+          <SongPreviewModal
+            song={previewSong}
+            initialTab={previewTab}
+            onClose={() => setPreviewSong(null)}
+            onEdit={(s) => { setPreviewSong(null); setEditSong(s); setShowSongModal(true); }}
           />
         </Suspense>
       )}

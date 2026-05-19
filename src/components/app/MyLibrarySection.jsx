@@ -128,7 +128,7 @@ function AddToLibraryModal({ songs, libraryIds, userId, churchId, onClose, onAdd
   );
 }
 
-export default function MyLibrarySection({ songs, myLibrary, user, church, onRefresh }) {
+export default function MyLibrarySection({ songs, myLibrary, user, church, onRefresh, onPreviewSong }) {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedEntry, setSelectedEntry] = useState(null);
@@ -186,7 +186,7 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
             const displayKey = entry.preferred_key || song?.key;
             const extraSections = sections.length > 3 ? sections.length - 3 : 0;
             return (
-              <div key={entry.id} className="bg-card border border-border/30 rounded-xl p-4 flex flex-col gap-3 hover:border-primary/40 transition-all">
+              <div key={entry.id} onClick={() => onPreviewSong?.(song, 'chart')} className="bg-[#1a1a2c] border border-white/10 rounded-xl p-4 flex flex-col gap-3 cursor-pointer hover:border-primary/40 transition-all" style={{ transition: 'border-color 0.2s, box-shadow 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'hsl(var(--primary) / 0.5)'; e.currentTarget.style.boxShadow = '0 0 20px hsl(var(--primary) / 0.10), 0 6px 20px rgba(0,0,0,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.boxShadow = 'none'; }}>
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -227,14 +227,14 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
 
                 {/* Action buttons */}
                 <div className="flex gap-1.5 pt-1 border-t border-white/10">
-                  <button onClick={() => setSelectedEntry(entry)} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
-                    <span>⌘</span> Edit
+                  <button onClick={() => setSelectedEntry(entry)} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all">
+                    ⌘ Edit
                   </button>
-                  <button onClick={() => setSelectedEntry(entry)} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
+                  <button onClick={() => onPreviewSong?.(song, 'chart')} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-white/4 hover:bg-primary/10 rounded-lg py-1.5 transition-all">
                     📄 Chart
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
-                    + Set
+                  <button onClick={() => onPreviewSong?.(song, 'patches')} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-all">
+                    🎛 Patch
                   </button>
                 </div>
               </div>
