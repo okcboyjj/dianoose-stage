@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, Loader2, Music, List, Users, FileText, Save, Trash2, Copy, Share2, Calendar, Clock } from "lucide-react";
+import MobileSelect from "@/components/ui/MobileSelect";
 
 const ServiceEntity = base44.entities.Service;
 const SongEntity = base44.entities.Song;
@@ -30,7 +31,7 @@ function NewServiceModal({ churchId, onClose, onSave }) {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card border border-border/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20">
           <h3 className="font-bold text-foreground text-lg">+ New Service</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} aria-label="Close modal" className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div>
@@ -49,9 +50,9 @@ function NewServiceModal({ churchId, onClose, onSave }) {
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground ml-1">Type</Label>
-            <select value={form.type} onChange={e => set("type", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-              {SERVICE_TYPES.map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
-            </select>
+            <div className="mt-1.5">
+              <MobileSelect value={form.type} onChange={v => set("type", v)} options={SERVICE_TYPES} />
+            </div>
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground ml-1">Notes</Label>
@@ -105,7 +106,7 @@ function ServiceDetailModal({ service, songs, onClose, onSave }) {
             <Button onClick={handleSave} disabled={saving} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg font-semibold h-8 px-4">
               {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Save className="w-3 h-3 mr-1.5" />Save</>}
             </Button>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+            <button onClick={onClose} aria-label="Close modal" className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
           </div>
         </div>
 
@@ -174,15 +175,15 @@ function ServiceDetailModal({ service, songs, onClose, onSave }) {
               </div>
               <div>
                 <Label className="text-xs font-medium text-muted-foreground ml-1">Type</Label>
-                <select value={form.type || "Sunday Morning"} onChange={e => set("type", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-                  {SERVICE_TYPES.map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
-                </select>
+                <div className="mt-1.5">
+                  <MobileSelect value={form.type || "Sunday Morning"} onChange={v => set("type", v)} options={SERVICE_TYPES} />
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-medium text-muted-foreground ml-1">Status</Label>
-                <select value={form.status || "upcoming"} onChange={e => set("status", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-                  {["upcoming", "past"].map(t => <option key={t} value={t} className="bg-card capitalize">{t}</option>)}
-                </select>
+                <div className="mt-1.5">
+                  <MobileSelect value={form.status || "upcoming"} onChange={v => set("status", v)} options={["upcoming", "past"]} />
+                </div>
               </div>
             </div>
           )}

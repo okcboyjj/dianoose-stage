@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Plus, X, Loader2, Search, Trash2, Save, Shield } from "lucide-react";
+import MobileSelect from "@/components/ui/MobileSelect";
 
 const ChurchMemberEntity = base44.entities.ChurchMember;
 
@@ -83,7 +84,7 @@ function MemberModal({ member, churchId, onClose, onSave }) {
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card border border-border/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20">
           <h3 className="font-bold text-foreground text-lg">{isNew ? "Add Member" : "Edit Member"}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} aria-label="Close modal" className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           {error && <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">{error}</div>}
@@ -107,9 +108,9 @@ function MemberModal({ member, churchId, onClose, onSave }) {
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground ml-1">App Role</Label>
-            <select value={form.role} onChange={e => set("role", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-              {ROLES.map(r => <option key={r} value={r} className="bg-card">{r}</option>)}
-            </select>
+            <div className="mt-1.5">
+              <MobileSelect value={form.role} onChange={v => set("role", v)} options={ROLES} />
+            </div>
           </div>
           {isNew && (
             <div>
@@ -122,7 +123,9 @@ function MemberModal({ member, churchId, onClose, onSave }) {
             <Label className="text-xs font-medium text-muted-foreground ml-1 block mb-2">Avatar Color</Label>
             <div className="flex flex-wrap gap-2">
               {AVATAR_COLORS.map(c => (
-                <button key={c} onClick={() => set("avatar_color", c)} style={{ backgroundColor: c }} className={`w-8 h-8 rounded-full transition-all ${form.avatar_color === c ? "ring-2 ring-offset-2 ring-offset-card ring-foreground scale-110" : "hover:scale-105"}`} />
+                <button key={c} onClick={() => set("avatar_color", c)} className={`w-11 h-11 rounded-full transition-all flex items-center justify-center ${form.avatar_color === c ? "ring-2 ring-offset-2 ring-offset-card ring-foreground scale-110" : "hover:scale-105"}`}>
+                  <span style={{ backgroundColor: c }} className="w-7 h-7 rounded-full block" />
+                </button>
               ))}
             </div>
           </div>

@@ -90,6 +90,7 @@ export default function MobileSelect({ value, onChange, options = [], placeholde
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
+                  aria-label="Close selection menu"
                   className="w-full min-h-[44px] rounded-xl bg-secondary/60 text-sm font-semibold text-foreground transition-colors active:bg-secondary"
                 >
                   Cancel

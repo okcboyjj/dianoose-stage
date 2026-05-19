@@ -144,6 +144,27 @@ button, a, [role="button"], [role="tab"], [role="checkbox"], [role="radio"] {
 /* Exception: inline icon-only buttons that use explicit size classes */
 button.no-min-h { min-height: unset; min-width: unset; }
 
+/* ── Route transition animations ─────────────────────────────────────────── */
+/* Smooth horizontal slide for page transitions */
+.route-slide-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.route-slide-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.route-slide-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+.route-slide-exit-active {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* ── Color contrast boost ─────────────────────────────────────────────────── */
 /* muted-foreground was 65% lightness — bump to 70% for better readability   */
 :root {

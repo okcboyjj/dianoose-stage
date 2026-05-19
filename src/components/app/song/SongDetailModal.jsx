@@ -118,6 +118,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
               )}
               <button
                 onClick={onClose}
+                aria-label="Close modal"
                 className="w-7 h-7 rounded-full bg-secondary/60 border border-white/10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-1"
               >
                 <X className="w-3.5 h-3.5" />

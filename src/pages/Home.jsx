@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -981,7 +982,7 @@ const ModalWrapper = ({ children, onClose, title, actionButton }) => (
           <h3 className="font-bold text-foreground text-lg">{title}</h3>
           <div className="flex items-center gap-3">
             {actionButton}
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"><X className="w-4 h-4" /></button>
+            <button onClick={onClose} aria-label="Close modal" className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors"><X className="w-4 h-4" /></button>
           </div>
         </div>
         {children}
@@ -1195,7 +1196,16 @@ const SECTION_TO_TAB = {
 };
 
 function MainApp({ onLogout }) {
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Derive activeSection from URL path
+  const getPathSection = () => {
+    const path = location.pathname.slice(1); // Remove leading /
+    return path || "dashboard";
+  };
+  const [activeSection, setActiveSection] = useState(getPathSection());
+  
   // Per-tab navigation stacks: { tabId: [section, ...] }
   const [tabStacks, setTabStacks] = useState({
     dashboard: ["dashboard"],
@@ -1228,16 +1238,16 @@ function MainApp({ onLogout }) {
   // Active tab derived from current section
   const activeTab = SECTION_TO_TAB[activeSection] || "settings";
 
-  // Navigate within the app — updates both section and the tab stack
-  const navigate = (section) => {
+  // Navigate within the app — updates URL, section, and the tab stack
+  const navigateTo = (section) => {
     const tab = SECTION_TO_TAB[section] || "settings";
     setTabStacks(prev => {
       const stack = prev[tab] || [TAB_ROOTS[tab]];
-      // Don't push duplicates
       if (stack[stack.length - 1] === section) return prev;
       return { ...prev, [tab]: [...stack, section] };
     });
     setActiveSection(section);
+    navigate(`/${section}`);
   };
 
   // Go back within current tab
@@ -1246,7 +1256,9 @@ function MainApp({ onLogout }) {
       const stack = prev[activeTab] || [];
       if (stack.length <= 1) return prev;
       const newStack = stack.slice(0, -1);
-      setActiveSection(newStack[newStack.length - 1]);
+      const prevSection = newStack[newStack.length - 1];
+      setActiveSection(prevSection);
+      navigate(`/${prevSection}`);
       return { ...prev, [activeTab]: newStack };
     });
   };
@@ -1255,13 +1267,14 @@ function MainApp({ onLogout }) {
   const switchTab = (tabId) => {
     const root = TAB_ROOTS[tabId];
     if (activeTab === tabId) {
-      // Reset stack to root
       setTabStacks(prev => ({ ...prev, [tabId]: [root] }));
       setActiveSection(root);
+      navigate(`/${root}`);
     } else {
-      // Restore last position in that tab
       const stack = tabStacks[tabId] || [root];
-      setActiveSection(stack[stack.length - 1]);
+      const targetSection = stack[stack.length - 1];
+      setActiveSection(targetSection);
+      navigate(`/${targetSection}`);
     }
   };
 
@@ -1319,6 +1332,14 @@ function MainApp({ onLogout }) {
     { id: "settings", icon: Settings, label: "Settings", group: "Other" }
   ];
 
+  // Sync URL with activeSection on location change
+  useEffect(() => {
+    const pathSection = getPathSection();
+    if (pathSection !== activeSection) {
+      setActiveSection(pathSection);
+    }
+  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const groups = [...new Set(navItems.map(n => n.group))];
   const avatarText = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`.toUpperCase() || "?";
 
@@ -1340,7 +1361,7 @@ function MainApp({ onLogout }) {
             {navItems.filter(n => n.group === group).map(item => (
               <button
                 key={item.id}
-                onClick={() => { navigate(item.id); if (mobile) setSidebarOpen(false); }}
+                onClick={() => { navigateTo(item.id); if (mobile) setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 group ${activeSection === item.id ? "bg-primary text-primary-foreground shadow-md shadow-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}
               >
                 <item.icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 duration-300 ${activeSection === item.id ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}`} />
@@ -1520,8 +1541,8 @@ function MainApp({ onLogout }) {
         <div className="hidden sm:flex items-center gap-4 px-6 py-4 border-b border-border/30 bg-background/50 backdrop-blur-md shrink-0 sticky top-0 z-30">
           <div className="flex-1" />
           <div className="flex items-center gap-3">
-            <button onClick={loadData} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Refresh"><RefreshCw className="w-4 h-4" /></button>
-            <button onClick={() => navigate("notifications")} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative">
+            <button onClick={loadData} aria-label="Refresh data" className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Refresh"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={() => navigateTo("notifications")} aria-label="View notifications" className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative">
               <Bell className="w-4 h-4" />
               {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-primary animate-pulse" />}
             </button>
@@ -1535,6 +1556,7 @@ function MainApp({ onLogout }) {
             {canGoBack ? (
               <button
                 onClick={goBack}
+                aria-label="Go back"
                 className="flex items-center gap-1 min-w-[44px] min-h-[44px] px-2 text-primary font-semibold text-sm"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -1556,8 +1578,8 @@ function MainApp({ onLogout }) {
 
           {/* Right: action buttons */}
           <div className="flex items-center gap-1" style={{ minWidth: 44 }}>
-            <button onClick={loadData} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors"><RefreshCw className="w-4 h-4" /></button>
-            <button onClick={() => navigate("notifications")} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors relative">
+            <button onClick={loadData} aria-label="Refresh data" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={() => navigateTo("notifications")} aria-label="View notifications" className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors relative">
               <Bell className="w-4 h-4" />
               {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary animate-pulse" />}
             </button>
@@ -1597,6 +1619,7 @@ function MainApp({ onLogout }) {
                 key={item.id}
                 onClick={() => switchTab(item.id)}
                 className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition-all no-select ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                aria-label={item.label}
               >
                 <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
                 <span className="text-[10px] font-semibold">{item.label}</span>
