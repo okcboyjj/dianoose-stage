@@ -1217,7 +1217,10 @@ function MainApp({ onLogout }) {
               }).map((song, i) => (
                 <AnimatedElement key={song.id} delay={i * 40 + 100}>
                   <div onClick={() => { setEditSong(song); setShowSongModal(true); }} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-4 hover:shadow-lg hover:-translate-y-0.5">
-                    <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    {song.artwork_url ? (
+                      <img src={song.artwork_url} alt={song.title} loading="lazy" className="w-11 h-11 rounded-xl object-cover shrink-0 shadow-md" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                    ) : null}
+                    <div className={`w-11 h-11 rounded-xl bg-primary/10 items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors ${song.artwork_url ? 'hidden' : 'flex'}`}>
                       <Music className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
