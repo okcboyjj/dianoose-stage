@@ -72,7 +72,14 @@ const AnimatedElement = ({ children, className = "", delay = 0 }) => {
     return () => clearTimeout(timer);
   }, [delay]);
   return (
-    <div className={`transition-all duration-400 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"} ${className}`}>
+    <div
+      className={`${className}`}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? "translateY(0px)" : "translateY(18px)",
+        transition: `opacity 0.45s cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform 0.45s cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
+      }}
+    >
       {children}
     </div>
   );
@@ -1385,7 +1392,17 @@ function MainApp({ onLogout }) {
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 sm:p-8 scrollbar-hide">
-          {renderContent()}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
 
