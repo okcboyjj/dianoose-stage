@@ -1337,19 +1337,19 @@ function MainApp({ onLogout }) {
 
     const sectionFallback = <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
-    if (activeSection === "services") return <Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense>;
-    if (activeSection === "mylibrary") return <Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense>;
-    if (activeSection === "mystage") return <Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense>;
-    if (activeSection === "musicians") return <Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense>;
-    if (activeSection === "notifications") return <Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense>;
-    if (activeSection === "admin") return <Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense>;
+    if (activeSection === "services") return <AnimatedElement><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "mylibrary") return <AnimatedElement><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
+    if (activeSection === "mystage") return <AnimatedElement><Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "musicians") return <AnimatedElement><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "notifications") return <AnimatedElement><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "admin") return <AnimatedElement><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
     if (activeSection === "settings") return (
-      <Suspense fallback={sectionFallback}><SettingsSection
+      <AnimatedElement><Suspense fallback={sectionFallback}><SettingsSection
         church={church}
         user={user}
         onChurchUpdate={(updated) => { globalChurch = updated; }}
         onUserUpdate={(updated) => { globalUser = updated; }}
-      /></Suspense>
+      /></Suspense></AnimatedElement>
     );
     return null;
   };
