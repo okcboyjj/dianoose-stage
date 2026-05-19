@@ -43,6 +43,12 @@
     "apple_music_url": {
       "type": "string"
     },
+    "source_url": {
+      "type": "string"
+    },
+    "is_verified": {
+      "type": "boolean"
+    },
     "chart_content": {
       "type": "string"
     },
@@ -50,9 +56,6 @@
       "type": "string"
     },
     "keys_patch_notes": {
-      "type": "string"
-    },
-    "rehearsal_notes": {
       "type": "string"
     },
     "production_notes": {
