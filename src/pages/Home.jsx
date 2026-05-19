@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
+import MobileSelect from "@/components/ui/MobileSelect";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
 const SongPreviewModal = lazy(() => import("@/components/app/song/SongPreviewModal.jsx"));
@@ -813,9 +814,9 @@ function SetupWizard({ onDone, onBack }) {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground ml-1">Service Day</Label>
-                    <select value={data.serviceDay} onChange={e => set("serviceDay", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 focus:bg-background transition-colors">
-                      {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map(d => <option key={d} value={d} className="bg-card">{d}</option>)}
-                    </select>
+                    <div className="mt-1.5">
+                      <MobileSelect value={data.serviceDay} onChange={v => set("serviceDay", v)} options={["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]} />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -829,9 +830,9 @@ function SetupWizard({ onDone, onBack }) {
                   </div>
                   <div>
                     <Label className="text-xs font-medium text-muted-foreground ml-1">Timezone</Label>
-                    <select value={data.timezone} onChange={e => set("timezone", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 focus:bg-background transition-colors">
-                      {["Eastern (ET)","Central (CT)","Mountain (MT)","Pacific (PT)","UTC"].map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
-                    </select>
+                    <div className="mt-1.5">
+                      <MobileSelect value={data.timezone} onChange={v => set("timezone", v)} options={["Eastern (ET)","Central (CT)","Mountain (MT)","Pacific (PT)","UTC"]} />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1171,8 +1172,38 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
+// Per-tab root sections for the bottom nav
+const TAB_ROOTS = {
+  dashboard: "dashboard",
+  songs: "songs",
+  services: "services",
+  mystage: "mystage",
+  settings: "settings",
+};
+
+// All non-root sections belong to the "settings" tab bucket on mobile
+const SECTION_TO_TAB = {
+  dashboard: "dashboard",
+  songs: "songs",
+  services: "services",
+  mystage: "mystage",
+  settings: "settings",
+  mylibrary: "settings",
+  musicians: "settings",
+  notifications: "settings",
+  admin: "settings",
+};
+
 function MainApp({ onLogout }) {
   const [activeSection, setActiveSection] = useState("dashboard");
+  // Per-tab navigation stacks: { tabId: [section, ...] }
+  const [tabStacks, setTabStacks] = useState({
+    dashboard: ["dashboard"],
+    songs: ["songs"],
+    services: ["services"],
+    mystage: ["mystage"],
+    settings: ["settings"],
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [songs, setSongs] = useState([]);
   const [services, setServices] = useState([]);
@@ -1193,6 +1224,48 @@ function MainApp({ onLogout }) {
   const church = globalChurch;
   const user = globalUser;
   const isAdmin = user?.role === "Admin" || user?.role === "Worship Leader";
+
+  // Active tab derived from current section
+  const activeTab = SECTION_TO_TAB[activeSection] || "settings";
+
+  // Navigate within the app — updates both section and the tab stack
+  const navigate = (section) => {
+    const tab = SECTION_TO_TAB[section] || "settings";
+    setTabStacks(prev => {
+      const stack = prev[tab] || [TAB_ROOTS[tab]];
+      // Don't push duplicates
+      if (stack[stack.length - 1] === section) return prev;
+      return { ...prev, [tab]: [...stack, section] };
+    });
+    setActiveSection(section);
+  };
+
+  // Go back within current tab
+  const goBack = () => {
+    setTabStacks(prev => {
+      const stack = prev[activeTab] || [];
+      if (stack.length <= 1) return prev;
+      const newStack = stack.slice(0, -1);
+      setActiveSection(newStack[newStack.length - 1]);
+      return { ...prev, [activeTab]: newStack };
+    });
+  };
+
+  // Switch tab — if tapping the active tab, reset its stack to root
+  const switchTab = (tabId) => {
+    const root = TAB_ROOTS[tabId];
+    if (activeTab === tabId) {
+      // Reset stack to root
+      setTabStacks(prev => ({ ...prev, [tabId]: [root] }));
+      setActiveSection(root);
+    } else {
+      // Restore last position in that tab
+      const stack = tabStacks[tabId] || [root];
+      setActiveSection(stack[stack.length - 1]);
+    }
+  };
+
+  const canGoBack = (tabStacks[activeTab] || []).length > 1;
 
   const loadData = useCallback(async (section, showSpinner = false) => {
     section = section ?? activeSection;
@@ -1232,7 +1305,7 @@ function MainApp({ onLogout }) {
     const spinner = isFirstLoad.current;
     isFirstLoad.current = false;
     loadData(activeSection, spinner);
-  }, [church?.id, activeSection]);
+  }, [church?.id, activeSection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const navItems = [
     { id: "dashboard", icon: HomeIcon, label: "Dashboard", group: "Main" },
@@ -1267,7 +1340,7 @@ function MainApp({ onLogout }) {
             {navItems.filter(n => n.group === group).map(item => (
               <button
                 key={item.id}
-                onClick={() => { setActiveSection(item.id); if (mobile) setSidebarOpen(false); }}
+                onClick={() => { navigate(item.id); if (mobile) setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 group ${activeSection === item.id ? "bg-primary text-primary-foreground shadow-md shadow-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"}`}
               >
                 <item.icon className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 duration-300 ${activeSection === item.id ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary"}`} />
@@ -1384,7 +1457,7 @@ function MainApp({ onLogout }) {
                 <div className="text-center py-12 text-muted-foreground">
                   <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm font-medium">No songs yet.</p>
-                  <p className="text-xs mt-1">Browse the <button onClick={() => setSongLibTab("global")} className="text-primary underline">Global Catalog</button> to add songs instantly.</p>
+                  <p className="text-xs mt-1">Browse the <button onClick={() => setSongLibTab("global")} className="text-primary underline min-h-[44px] inline-flex items-center">Global Catalog</button> to add songs instantly.</p>
                 </div>
               )}
             </div>
@@ -1448,7 +1521,7 @@ function MainApp({ onLogout }) {
           <div className="flex-1" />
           <div className="flex items-center gap-3">
             <button onClick={loadData} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Refresh"><RefreshCw className="w-4 h-4" /></button>
-            <button onClick={() => setActiveSection("notifications")} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative">
+            <button onClick={() => navigate("notifications")} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative">
               <Bell className="w-4 h-4" />
               {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-primary animate-pulse" />}
             </button>
@@ -1456,18 +1529,37 @@ function MainApp({ onLogout }) {
         </div>
 
         {/* Mobile top header */}
-        <div className="mobile-header sm:hidden flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-md shrink-0 sticky top-0 z-30">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-              <Music className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
-            <span className="text-sm font-bold text-foreground">{navItems.find(n => n.id === activeSection)?.label || "Dianoose Stage"}</span>
+        <div className="mobile-header sm:hidden flex items-center justify-between px-2 border-b border-border/30 bg-background/80 backdrop-blur-md shrink-0 sticky top-0 z-30" style={{ minHeight: 56 }}>
+          {/* Left: back button or logo */}
+          <div className="flex items-center" style={{ minWidth: 44 }}>
+            {canGoBack ? (
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1 min-w-[44px] min-h-[44px] px-2 text-primary font-semibold text-sm"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-xs">Back</span>
+              </button>
+            ) : (
+              <div className="w-11 h-11 flex items-center justify-center pl-2">
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+                  <Music className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={loadData} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary transition-colors"><RefreshCw className="w-4 h-4" /></button>
-            <button onClick={() => setActiveSection("notifications")} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary transition-colors relative">
+
+          {/* Center: section title */}
+          <span className="text-sm font-bold text-foreground flex-1 text-center">
+            {navItems.find(n => n.id === activeSection)?.label || "Dianoose Stage"}
+          </span>
+
+          {/* Right: action buttons */}
+          <div className="flex items-center gap-1" style={{ minWidth: 44 }}>
+            <button onClick={loadData} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={() => navigate("notifications")} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted-foreground active:bg-secondary transition-colors relative">
               <Bell className="w-4 h-4" />
-              {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />}
+              {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary animate-pulse" />}
             </button>
           </div>
         </div>
@@ -1491,22 +1583,22 @@ function MainApp({ onLogout }) {
 
       {/* Mobile bottom navigation */}
       <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/40">
-        <div className="flex items-center justify-around px-2 pt-2 pb-1">
+        <div className="flex items-center justify-around px-1 pt-1">
           {[
             { id: "dashboard", icon: HomeIcon, label: "Home" },
             { id: "songs", icon: Music, label: "Songs" },
             { id: "services", icon: List, label: "Services" },
-            { id: "mystage", icon: Guitar, label: "My Stage" },
+            { id: "mystage", icon: Guitar, label: "Stage" },
             { id: "settings", icon: Settings, label: "More" },
           ].map(item => {
-            const isActive = activeSection === item.id || (item.id === "settings" && ["settings","admin","musicians","notifications","mylibrary"].includes(activeSection));
+            const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                onClick={() => switchTab(item.id)}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[52px] rounded-xl transition-all no-select ${isActive ? "text-primary" : "text-muted-foreground"}`}
               >
-                <item.icon className={`w-5 h-5 transition-transform ${isActive ? "scale-110" : ""}`} />
+                <item.icon className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-110" : ""}`} />
                 <span className="text-[10px] font-semibold">{item.label}</span>
                 {isActive && <div className="w-1 h-1 rounded-full bg-primary" />}
               </button>

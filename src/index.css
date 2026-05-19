@@ -135,6 +135,21 @@ html, body {
   -webkit-user-select: none;
 }
 
+/* ── Minimum tap target enforcement ──────────────────────────────────────── */
+/* Ensures all interactive elements meet Apple HIG / WCAG 44×44px minimum   */
+button, a, [role="button"], [role="tab"], [role="checkbox"], [role="radio"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* Exception: inline icon-only buttons that use explicit size classes */
+button.no-min-h { min-height: unset; min-width: unset; }
+
+/* ── Color contrast boost ─────────────────────────────────────────────────── */
+/* muted-foreground was 65% lightness — bump to 70% for better readability   */
+:root {
+  --muted-foreground: 210 40% 72%;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

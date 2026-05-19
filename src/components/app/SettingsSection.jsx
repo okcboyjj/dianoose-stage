@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Settings, Save, Loader2, Check, Trash2, AlertTriangle } from "lucide-react";
+import MobileSelect from "@/components/ui/MobileSelect";
 
 const ChurchEntity = base44.entities.Church;
 const ChurchMemberEntity = base44.entities.ChurchMember;
@@ -151,9 +152,9 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
           <div className="space-y-4">
             <div>
               <Label className="text-xs font-medium text-muted-foreground ml-1">Service Day</Label>
-              <select value={schedForm.service_day} onChange={e => setSc("service_day", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-                {["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map(d => <option key={d} value={d} className="bg-card">{d}</option>)}
-              </select>
+              <div className="mt-1.5">
+                <MobileSelect value={schedForm.service_day} onChange={v => setSc("service_day", v)} options={["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label className="text-xs font-medium text-muted-foreground ml-1">Time</Label><Input type="time" value={schedForm.service_time} onChange={e => setSc("service_time", e.target.value)} className="mt-1.5 bg-background/50 border-border/50 text-foreground text-sm" /></div>
@@ -161,9 +162,9 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground ml-1">Timezone</Label>
-              <select value={schedForm.timezone} onChange={e => setSc("timezone", e.target.value)} className="mt-1.5 w-full bg-background/50 border border-border/50 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50 transition-colors">
-                {["Eastern (ET)","Central (CT)","Mountain (MT)","Pacific (PT)","UTC"].map(t => <option key={t} value={t} className="bg-card">{t}</option>)}
-              </select>
+              <div className="mt-1.5">
+                <MobileSelect value={schedForm.timezone} onChange={v => setSc("timezone", v)} options={["Eastern (ET)","Central (CT)","Mountain (MT)","Pacific (PT)","UTC"]} />
+              </div>
             </div>
           </div>
           <Button onClick={saveSched} disabled={schedSaving} className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold px-6">
@@ -189,7 +190,9 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
                 <Label className="text-xs font-medium text-muted-foreground ml-1 block mb-2">Avatar Color</Label>
                 <div className="flex flex-wrap gap-2">
                   {AVATAR_COLORS.map(c => (
-                    <button key={c} onClick={() => setP("avatar_color", c)} style={{ backgroundColor: c }} className={`w-8 h-8 rounded-full transition-all ${profileForm.avatar_color === c ? "ring-2 ring-offset-2 ring-offset-card ring-foreground scale-110" : "hover:scale-105"}`} />
+                    <button key={c} onClick={() => setP("avatar_color", c)} className={`w-11 h-11 rounded-full transition-all flex items-center justify-center ${profileForm.avatar_color === c ? "ring-2 ring-offset-2 ring-offset-card ring-foreground scale-110" : "hover:scale-105"}`}>
+                      <span style={{ backgroundColor: c }} className="w-7 h-7 rounded-full block" />
+                    </button>
                   ))}
                 </div>
               </div>
