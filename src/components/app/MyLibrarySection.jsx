@@ -179,27 +179,67 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
           <p className="text-sm text-muted-foreground">Add songs from the Song Library to build your personal collection.</p>
         </div>
       ) : (
-        <div className="grid gap-3">
-          {filtered.map(entry => (
-            <div key={entry.id} onClick={() => setSelectedEntry(entry)} className="glass-panel rounded-xl px-5 py-4 hover:border-primary/50 transition-all duration-300 cursor-pointer group flex items-center gap-5 hover:shadow-lg hover:-translate-y-0.5">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                <Music className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-base font-semibold text-foreground group-hover:text-primary transition-colors truncate">{entry.song?.title}</p>
-                <p className="text-xs text-muted-foreground font-medium mt-0.5">{entry.song?.artist}</p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {entry.preferred_key && <span className="text-xs bg-primary/10 border border-primary/20 text-primary rounded-lg px-3 py-1 font-bold">{entry.preferred_key}</span>}
-                {entry.category && <span className="text-xs bg-secondary border border-border/40 text-muted-foreground rounded-lg px-2.5 py-1 font-medium hidden sm:block">{entry.category}</span>}
-                {entry.rating > 0 && (
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(n => <Star key={n} className={`w-3 h-3 ${entry.rating >= n ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(entry => {
+            const song = entry.song;
+            const sections = song?.arrangement_sections || [];
+            const displayKey = entry.preferred_key || song?.key;
+            const extraSections = sections.length > 3 ? sections.length - 3 : 0;
+            return (
+              <div key={entry.id} className="bg-card border border-border/30 rounded-xl p-4 flex flex-col gap-3 hover:border-primary/40 transition-all">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground truncate leading-tight">{song?.title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{song?.artist}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {displayKey && (
+                      <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-primary">{displayKey}</span>
+                      </div>
+                    )}
+                    <button className="text-muted-foreground hover:text-yellow-400 transition-colors">
+                      <Star className={`w-4 h-4 ${entry.rating > 0 ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Meta pills */}
+                <div className="flex flex-wrap gap-1.5">
+                  {song?.bpm && <span className="text-[10px] font-semibold bg-secondary/60 text-muted-foreground border border-white/10 rounded-full px-2.5 py-0.5">{song.bpm} BPM</span>}
+                  {song?.time_signature && <span className="text-[10px] font-semibold bg-secondary/60 text-muted-foreground border border-white/10 rounded-full px-2.5 py-0.5">{song.time_signature}</span>}
+                  {Number(song?.capo) > 0 && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Capo {song.capo}</span>}
+                  {song?.chart_content && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Chart</span>}
+                </div>
+
+                {/* Arrangement sections */}
+                {sections.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {sections.slice(0, 3).map(s => (
+                      <span key={s} className="text-[10px] font-semibold bg-secondary/40 text-muted-foreground border border-white/10 rounded-md px-2 py-0.5">{s}</span>
+                    ))}
+                    {extraSections > 0 && (
+                      <span className="text-[10px] font-semibold bg-secondary/40 text-muted-foreground border border-white/10 rounded-md px-2 py-0.5">+{extraSections}</span>
+                    )}
                   </div>
                 )}
+
+                {/* Action buttons */}
+                <div className="flex gap-1.5 pt-1 border-t border-white/10">
+                  <button onClick={() => setSelectedEntry(entry)} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
+                    <span>⌘</span> Edit
+                  </button>
+                  <button onClick={() => setSelectedEntry(entry)} className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
+                    📄 Chart
+                  </button>
+                  <button className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-secondary/30 hover:bg-secondary/60 rounded-lg py-1.5 transition-all">
+                    + Set
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
