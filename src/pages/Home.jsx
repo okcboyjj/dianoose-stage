@@ -1327,7 +1327,7 @@ export default function Home() {
     globalUser = null;
     globalChurch = null;
     setAuthed(false);
-    base44.auth.logout();
+    base44.auth.logout("/");
   };
 
   return <MainApp onLogout={handleLogout} />;
