@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe } from "lucide-react";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
+const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
 
 const ServicesSection = lazy(() => import("@/components/app/ServicesSection"));
 const MyLibrarySection = lazy(() => import("@/components/app/MyLibrarySection"));
@@ -1312,7 +1313,16 @@ function MainApp({ onLogout }) {
         </div>
       </div>
 
-      {showSongModal && <SongModal song={editSong} onClose={() => setShowSongModal(false)} onSave={() => { setShowSongModal(false); loadData(); }} churchId={church?.id} />}
+      {showSongModal && (
+        <Suspense fallback={null}>
+          <SongDetailModal
+            song={editSong}
+            onClose={() => setShowSongModal(false)}
+            onSave={() => { setShowSongModal(false); loadData(); }}
+            churchId={church?.id}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
