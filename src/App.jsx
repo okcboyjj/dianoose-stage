@@ -22,6 +22,15 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
+              <Route path="/dashboard" element={<Home />} />
+              <Route path="/songs" element={<Home />} />
+              <Route path="/services" element={<Home />} />
+              <Route path="/mylibrary" element={<Home />} />
+              <Route path="/mystage" element={<Home />} />
+              <Route path="/musicians" element={<Home />} />
+              <Route path="/notifications" element={<Home />} />
+              <Route path="/admin" element={<Home />} />
+              <Route path="/settings" element={<Home />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
           </Routes>
