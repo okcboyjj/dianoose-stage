@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Calendar, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, ChevronRight, Save, Trash2, Copy, Send, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail } from "lucide-react";
-import ServicesSection from "@/components/app/ServicesSection";
-import MyLibrarySection from "@/components/app/MyLibrarySection";
-import MusicianSection from "@/components/app/MusicianSection";
-import AdminSection from "@/components/app/AdminSection";
-import SettingsSection from "@/components/app/SettingsSection";
-import NotificationsSection from "@/components/app/NotificationsSection";
-import MyStageSection from "@/components/app/MyStageSection";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar } from "lucide-react";
+
+const ServicesSection = lazy(() => import("@/components/app/ServicesSection"));
+const MyLibrarySection = lazy(() => import("@/components/app/MyLibrarySection"));
+const MusicianSection = lazy(() => import("@/components/app/MusicianSection"));
+const AdminSection = lazy(() => import("@/components/app/AdminSection"));
+const SettingsSection = lazy(() => import("@/components/app/SettingsSection"));
+const NotificationsSection = lazy(() => import("@/components/app/NotificationsSection"));
+const MyStageSection = lazy(() => import("@/components/app/MyStageSection"));
 
 const SongEntity = base44.entities.Song;
 const ServiceEntity = base44.entities.Service;
@@ -252,19 +253,19 @@ function LoginScreen({ onAuth }) {
       <GlobalStyles />
       {/* Deep ambient radial glow matching screenshot */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/15 via-background to-background" />
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen" style={{ animation: 'floatB 10s ease-in-out infinite 2s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen hidden sm:block" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen hidden sm:block" style={{ animation: 'floatB 10s ease-in-out infinite 2s' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
         className="w-full max-w-[420px] mx-4 relative z-10"
       >
         <div className="glass-panel rounded-2xl p-8 shadow-2xl shadow-black/40">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/20 transition-transform hover:scale-105 duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary/20">
               <Music className="w-7 h-7 text-primary-foreground" />
             </div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">Dianoose Stage</h1>
@@ -459,12 +460,12 @@ function VerifyEmailScreen({ email, password, onVerified, onBack }) {
     <div className="min-h-screen bg-background flex items-center justify-center relative">
       <GlobalStyles />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/15 via-background to-background" />
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none mix-blend-screen hidden sm:block" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
         className="w-full max-w-[420px] mx-4 relative z-10"
       >
         <div className="glass-panel rounded-2xl p-8 shadow-2xl shadow-black/40">
@@ -673,8 +674,8 @@ function SetupWizard({ onDone, onBack }) {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
       <GlobalStyles />
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-[120px] pointer-events-none mix-blend-screen" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
-      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen" style={{ animation: 'floatB 10s ease-in-out infinite 2s' }} />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/15 rounded-full blur-[120px] pointer-events-none mix-blend-screen hidden sm:block" style={{ animation: 'floatA 12s ease-in-out infinite' }} />
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[100px] pointer-events-none mix-blend-screen hidden sm:block" style={{ animation: 'floatB 10s ease-in-out infinite 2s' }} />
 
       <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.5 }} className="w-full max-w-lg mx-4 relative z-10">
         <div className="glass-panel rounded-2xl shadow-2xl shadow-black/40 overflow-hidden">
@@ -1011,23 +1012,40 @@ function MainApp({ onLogout }) {
   const user = globalUser;
   const isAdmin = user?.role === "Admin" || user?.role === "Worship Leader";
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (section) => {
+    section = section ?? activeSection;
     if (!church?.id) return;
     setLoading(true);
+    const uid = user?.user_id || user?.id;
     try {
-      const [s, svc, m, n, ml] = await Promise.all([
+      // Always fetch songs + services (needed for dashboard stats too)
+      // Fetch section-specific data only when needed
+      const base = [
         SongEntity.filter({ church_id: church.id }),
         ServiceEntity.filter({ church_id: church.id }),
-        ChurchMemberEntity.filter({ church_id: church.id }),
-        NotificationEntity.filter({ user_id: user?.user_id || user?.id }),
-        MyLibrarySongEntity.filter({ user_id: user?.user_id || user?.id })
-      ]);
-      setSongs(s); setServices(svc); setMembers(m); setNotifications(n); setMyLibrary(ml);
+      ];
+      const [s, svc] = await Promise.all(base);
+      setSongs(s); setServices(svc);
+
+      // Fetch heavier per-section data lazily
+      if (["dashboard","musicians","mystage","admin"].includes(section)) {
+        const m = await ChurchMemberEntity.filter({ church_id: church.id });
+        setMembers(m);
+      }
+      if (["dashboard","notifications"].includes(section)) {
+        const n = await NotificationEntity.filter({ user_id: uid });
+        setNotifications(n);
+      }
+      if (["dashboard","mylibrary","mystage"].includes(section)) {
+        const ml = await MyLibrarySongEntity.filter({ user_id: uid });
+        setMyLibrary(ml);
+      }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }, [church?.id]);
+  }, [church?.id, activeSection]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // Load data for the current section whenever it changes
+  useEffect(() => { loadData(activeSection); }, [church?.id, activeSection]);
 
   const navItems = [
     { id: "dashboard", icon: HomeIcon, label: "Dashboard", group: "Main" },
@@ -1172,19 +1190,21 @@ function MainApp({ onLogout }) {
       </div>
     );
 
-    if (activeSection === "services") return <ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} />;
-    if (activeSection === "mylibrary") return <MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} />;
-    if (activeSection === "mystage") return <MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} />;
-    if (activeSection === "musicians") return <MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} />;
-    if (activeSection === "notifications") return <NotificationsSection notifications={notifications} onRefresh={loadData} />;
-    if (activeSection === "admin") return <AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} />;
+    const sectionFallback = <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
+
+    if (activeSection === "services") return <Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "mylibrary") return <Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "mystage") return <Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "musicians") return <Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "notifications") return <Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense>;
+    if (activeSection === "admin") return <Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense>;
     if (activeSection === "settings") return (
-      <SettingsSection
+      <Suspense fallback={sectionFallback}><SettingsSection
         church={church}
         user={user}
         onChurchUpdate={(updated) => { globalChurch = updated; }}
         onUserUpdate={(updated) => { globalUser = updated; }}
-      />
+      /></Suspense>
     );
     return null;
   };
@@ -1192,8 +1212,8 @@ function MainApp({ onLogout }) {
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
       <GlobalStyles />
-      {/* App ambient background */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
+      {/* App ambient background - hidden on mobile for perf */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[150px] pointer-events-none mix-blend-screen hidden sm:block" />
       
       {/* Desktop sidebar */}
       <div className="hidden sm:flex shrink-0"><Sidebar /></div>

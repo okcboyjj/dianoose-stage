@@ -2,57 +2,33 @@ import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Home from './pages/Home';
-import ResetPassword from './pages/ResetPassword';
 import Layout from './components/Layout';
-// Add page imports here
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  return (
-    <Routes>
-      {/* Password reset — must be outside auth gate so unauthenticated users can reach it */}
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        {/* Add your page Route elements here */}
-      </Route>
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-  );
-};
+const Home = lazy(() => import('./pages/Home'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <Suspense fallback={
+          <div className="fixed inset-0 flex items-center justify-center bg-background">
+            <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin" />
+          </div>
+        }>
+          <Routes>
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+            </Route>
+            <Route path="*" element={<PageNotFound />} />
+          </Routes>
+        </Suspense>
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
   )
 }
 
