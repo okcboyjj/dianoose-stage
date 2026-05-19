@@ -66,26 +66,13 @@ const GlobalStyles = () => (
 
 // ─── Animated scroll reveal ───────────────────────────────────────────────────
 const AnimatedElement = ({ children, className = "", delay = 0 }) => {
-  const ref = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight) { setIsVisible(true); return; }
-    const fallback = setTimeout(() => setIsVisible(true), 800 + delay);
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { 
-        clearTimeout(fallback); 
-        setTimeout(() => setIsVisible(true), delay); 
-        observer.unobserve(el); 
-      }
-    }, { threshold: 0.05, rootMargin: "0px 0px 200px 0px" });
-    observer.observe(el);
-    return () => { observer.disconnect(); clearTimeout(fallback); };
+    const timer = setTimeout(() => setIsVisible(true), delay);
+    return () => clearTimeout(timer);
   }, [delay]);
   return (
-    <div ref={ref} className={`transition-all duration-700 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"} ${className}`}>
+    <div className={`transition-all duration-500 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"} ${className}`}>
       {children}
     </div>
   );
@@ -1233,7 +1220,7 @@ function MainApp({ onLogout }) {
 
   const renderContent = () => {
     if (activeSection === "dashboard") return (
-      <div className="space-y-8 pb-12">
+      <div key="dashboard" className="space-y-8 pb-12">
         <AnimatedElement>
           <div className="flex items-end justify-between">
             <div>
@@ -1271,7 +1258,7 @@ function MainApp({ onLogout }) {
     );
 
     if (activeSection === "songs") return (
-      <div className="space-y-6 pb-12">
+      <div key="songs" className="space-y-6 pb-12">
         <AnimatedElement>
           <div className="flex sm:items-center justify-between flex-col sm:flex-row gap-4">
             <div>
@@ -1337,14 +1324,14 @@ function MainApp({ onLogout }) {
 
     const sectionFallback = <div className="flex items-center justify-center h-48"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>;
 
-    if (activeSection === "services") return <AnimatedElement><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "mylibrary") return <AnimatedElement><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
-    if (activeSection === "mystage") return <AnimatedElement><Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "musicians") return <AnimatedElement><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "notifications") return <AnimatedElement><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "admin") return <AnimatedElement><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
+    if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
+    if (activeSection === "mystage") return <AnimatedElement key="mystage"><Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
     if (activeSection === "settings") return (
-      <AnimatedElement><Suspense fallback={sectionFallback}><SettingsSection
+      <AnimatedElement key="settings"><Suspense fallback={sectionFallback}><SettingsSection
         church={church}
         user={user}
         onChurchUpdate={(updated) => { globalChurch = updated; }}
