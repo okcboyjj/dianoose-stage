@@ -160,47 +160,59 @@ function LoginScreen({ onAuth }) {
       if (churches.length === 0) throw new Error("That team code wasn't found. Double-check with your admin.");
       const church = churches[0];
 
-      const { user } = await base44.auth.loginViaEmailPassword(joinEmail.trim(), joinPassword);
-      if (!user) throw new Error("bad_credentials");
-
-      // Check if already a member
-      const existing = await ChurchMemberEntity.filter({ church_id: church.id, user_id: user.id });
-      if (existing.length > 0) {
-        // Already linked — just sign them in
-        globalUser = { ...user, ...existing[0] };
-        globalChurch = church;
-        onAuth();
-        return;
+      let user;
+      try {
+        const result = await base44.auth.loginViaEmailPassword(joinEmail.trim(), joinPassword);
+        user = result.user;
+        if (!user) throw new Error("bad_credentials");
+      } catch (loginErr) {
+        const loginMsg = (loginErr?.message || "").toLowerCase();
+        if (loginMsg.includes("verify") || loginMsg.includes("confirm") || loginMsg.includes("email")) {
+          // Need verification — show the OTP screen, pass church context so we can link after
+          setPendingVerification({ email: joinEmail.trim(), password: joinPassword, church });
+          return;
+        }
+        throw loginErr;
       }
 
-      // New member — create profile and link to church
-      const nameParts = (user.full_name || "").trim().split(" ");
-      const newMember = await ChurchMemberEntity.create({
-        first_name: nameParts[0] || "",
-        last_name: nameParts.slice(1).join(" ") || "",
-        email: user.email,
-        role: "Musician",
-        church_id: church.id,
-        user_id: user.id,
-        is_active: true
-      });
-      globalUser = { ...user, ...newMember };
-      globalChurch = church;
-      onAuth();
+      await completeJoin(user, church);
     } catch (e) {
       const msg = (e?.message || "").toLowerCase();
       if (msg === "bad_credentials" || msg.includes("invalid") || msg.includes("credentials") || msg.includes("incorrect") || msg.includes("unauthorized") || msg.includes("401")) {
         setError("Incorrect email or password. Please try again.");
-      } else if (msg.includes("team code")) {
+      } else if (msg.includes("team code") || msg.includes("wasn't found")) {
         setError(e.message);
-      } else if (msg.includes("verify") || msg.includes("confirm") || msg.includes("email")) {
-        setError("Please verify your email address before joining. Check your inbox for a verification email.");
       } else if (msg.includes("please enter")) {
         setError(e.message);
       } else {
         setError("Could not join the church workspace. Please check your details and try again.");
       }
     } finally { setLoading(false); }
+  };
+
+  const completeJoin = async (user, church) => {
+    // Check if already a member
+    const existing = await ChurchMemberEntity.filter({ church_id: church.id, user_id: user.id });
+    if (existing.length > 0) {
+      globalUser = { ...user, ...existing[0] };
+      globalChurch = church;
+      onAuth();
+      return;
+    }
+    // New member — create profile and link to church
+    const nameParts = (user.full_name || "").trim().split(" ");
+    const newMember = await ChurchMemberEntity.create({
+      first_name: nameParts[0] || "",
+      last_name: nameParts.slice(1).join(" ") || "",
+      email: user.email,
+      role: "Musician",
+      church_id: church.id,
+      user_id: user.id,
+      is_active: true
+    });
+    globalUser = { ...user, ...newMember };
+    globalChurch = church;
+    onAuth();
   };
 
   const handleForgotPassword = async () => {
@@ -220,7 +232,12 @@ function LoginScreen({ onAuth }) {
   };
 
   const handleVerifiedSignIn = async (user) => {
-    // After email verification during sign-in, load their church/member profile
+    // If this was a join flow, complete the church linking
+    if (pendingVerification?.church) {
+      await completeJoin(user, pendingVerification.church);
+      return;
+    }
+    // Normal sign-in verification — load their church/member profile
     const members = await ChurchMemberEntity.filter({ user_id: user.id });
     if (members.length > 0) {
       const churches = await ChurchEntity.filter({ id: members[0].church_id });
@@ -626,24 +643,10 @@ function SetupWizard({ onDone, onBack }) {
       // Register — this sends a verification email
       await base44.auth.register({ email: data.email.trim(), password: data.password });
 
-      // Try logging in immediately; if email verification is required, this will fail
-      // and we catch it to show the verification screen
-      try {
-        const { user } = await base44.auth.loginViaEmailPassword(data.email.trim(), data.password);
-        if (user) {
-          // Verification not required (or auto-verified) — proceed directly
-          await completeWorkspaceSetup(user);
-          return;
-        }
-      } catch (loginErr) {
-        const loginMsg = (loginErr?.message || "").toLowerCase();
-        if (loginMsg.includes("verify") || loginMsg.includes("confirm") || loginMsg.includes("email")) {
-          // Email verification required — show verify screen
-          setPendingVerification({ email: data.email.trim(), password: data.password });
-          return;
-        }
-        throw loginErr;
-      }
+      // Always show the OTP verify screen after registration.
+      // After verification, completeWorkspaceSetup will be called with the logged-in user.
+      setPendingVerification({ email: data.email.trim(), password: data.password });
+      return;
     } catch (e) {
       const msg = (e?.message || "").toLowerCase();
       if (msg.includes("already") || msg.includes("exists") || msg.includes("registered") || msg.includes("duplicate") || msg.includes("taken")) {
