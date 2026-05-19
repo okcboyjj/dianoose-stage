@@ -46,6 +46,23 @@ const GlobalStyles = () => (
       backdrop-filter: blur(12px);
       border: 1px solid hsl(var(--border) / 0.5);
     }
+    button, a, [role="button"] {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mobile-bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .main-content-mobile {
+      padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    }
+    .mobile-header {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    @keyframes ptr-spin {
+      to { transform: rotate(360deg); }
+    }
     .song-card {
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
       will-change: transform;
@@ -84,6 +101,53 @@ const AnimatedElement = ({ children, className = "", delay = 0 }) => {
     </div>
   );
 };
+
+// ─── Pull To Refresh ──────────────────────────────────────────────────────────
+function PullToRefresh({ onRefresh, children }) {
+  const startY = useRef(null);
+  const [pulling, setPulling] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const threshold = 72;
+
+  const onTouchStart = (e) => { startY.current = e.touches[0].clientY; };
+  const onTouchMove = (e) => {
+    if (startY.current === null) return;
+    const el = e.currentTarget;
+    if (el.scrollTop > 0) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) {
+      setProgress(Math.min(dy / threshold, 1));
+      setPulling(dy > 10);
+    }
+  };
+  const onTouchEnd = () => {
+    if (progress >= 1) onRefresh();
+    setPulling(false);
+    setProgress(0);
+    startY.current = null;
+  };
+
+  return (
+    <div
+      className="flex-1 overflow-y-auto relative"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      {pulling && (
+        <div className="absolute top-0 left-0 right-0 flex justify-center pt-2 z-10 pointer-events-none">
+          <div
+            className="w-8 h-8 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center"
+            style={{ opacity: progress, transform: `scale(${0.5 + progress * 0.5})` }}
+          >
+            <RefreshCw className="w-4 h-4 text-primary" style={{ animation: progress >= 1 ? 'ptr-spin 0.6s linear infinite' : 'none', transform: `rotate(${progress * 360}deg)` }} />
+          </div>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
 
 // ─── Auth state ───────────────────────────────────────────────────────────────
 let globalUser = null;
@@ -1379,8 +1443,8 @@ function MainApp({ onLogout }) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <div className="flex items-center gap-4 px-6 py-4 border-b border-border/30 bg-background/50 backdrop-blur-md shrink-0 sticky top-0 z-30">
-          <button onClick={() => setSidebarOpen(true)} className="sm:hidden w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-foreground hover:bg-secondary/80 transition-colors"><Menu className="w-5 h-5" /></button>
+        {/* Desktop top bar */}
+        <div className="hidden sm:flex items-center gap-4 px-6 py-4 border-b border-border/30 bg-background/50 backdrop-blur-md shrink-0 sticky top-0 z-30">
           <div className="flex-1" />
           <div className="flex items-center gap-3">
             <button onClick={loadData} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Refresh"><RefreshCw className="w-4 h-4" /></button>
@@ -1390,21 +1454,66 @@ function MainApp({ onLogout }) {
             </button>
           </div>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 scrollbar-hide">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {renderContent()}
-            </motion.div>
-          </AnimatePresence>
+
+        {/* Mobile top header */}
+        <div className="mobile-header sm:hidden flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-md shrink-0 sticky top-0 z-30">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+              <Music className="w-3.5 h-3.5 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-bold text-foreground">{navItems.find(n => n.id === activeSection)?.label || "Dianoose Stage"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={loadData} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary transition-colors"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={() => setActiveSection("notifications")} className="w-9 h-9 rounded-xl bg-secondary/50 flex items-center justify-center text-muted-foreground active:bg-secondary transition-colors relative">
+              <Bell className="w-4 h-4" />
+              {notifications.filter(n=>!n.is_read).length > 0 && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />}
+            </button>
+          </div>
         </div>
+        
+        <PullToRefresh onRefresh={() => loadData(activeSection)}>
+          <div className="p-4 sm:p-8 scrollbar-hide main-content-mobile sm:pb-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSection}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {renderContent()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </PullToRefresh>
       </div>
+
+      {/* Mobile bottom navigation */}
+      <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/40">
+        <div className="flex items-center justify-around px-2 pt-2 pb-1">
+          {[
+            { id: "dashboard", icon: HomeIcon, label: "Home" },
+            { id: "songs", icon: Music, label: "Songs" },
+            { id: "services", icon: List, label: "Services" },
+            { id: "mystage", icon: Guitar, label: "My Stage" },
+            { id: "settings", icon: Settings, label: "More" },
+          ].map(item => {
+            const isActive = activeSection === item.id || (item.id === "settings" && ["settings","admin","musicians","notifications","mylibrary"].includes(activeSection));
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${isActive ? "text-primary" : "text-muted-foreground"}`}
+              >
+                <item.icon className={`w-5 h-5 transition-transform ${isActive ? "scale-110" : ""}`} />
+                <span className="text-[10px] font-semibold">{item.label}</span>
+                {isActive && <div className="w-1 h-1 rounded-full bg-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {showSongModal && (
         <Suspense fallback={null}>

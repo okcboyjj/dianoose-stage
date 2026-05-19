@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Save, Loader2, Check } from "lucide-react";
+import { Settings, Save, Loader2, Check, Trash2, AlertTriangle } from "lucide-react";
 
 const ChurchEntity = base44.entities.Church;
 const ChurchMemberEntity = base44.entities.ChurchMember;
@@ -40,6 +40,11 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const [pwSaved, setPwSaved] = useState(false);
   const [pwError, setPwError] = useState("");
 
+  // Delete account
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
   const setC = (k, v) => setChurchForm(f => ({ ...f, [k]: v }));
   const setSc = (k, v) => setSchedForm(f => ({ ...f, [k]: v }));
   const setP = (k, v) => setProfileForm(f => ({ ...f, [k]: v }));
@@ -67,6 +72,16 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
     setProfileSaving(false); setProfileSaved(true);
     onUserUpdate({ ...user, ...profileForm });
     setTimeout(() => setProfileSaved(false), 2500);
+  };
+
+  const deleteAccount = async () => {
+    setDeleting(true);
+    try {
+      if (user?.id) await ChurchMemberEntity.delete(user.id);
+      await base44.auth.logout("/");
+    } catch (e) {
+      setDeleting(false);
+    }
   };
 
   const savePassword = async () => {
@@ -182,6 +197,36 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
             <Button onClick={saveProfile} disabled={profileSaving} className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold px-6">
               {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" />Update Profile</>}
             </Button>
+          </div>
+
+          {/* Delete Account */}
+          <div className="glass-panel rounded-2xl p-6 border-destructive/20">
+            <h2 className="text-base font-bold text-destructive mb-2 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Danger Zone</h2>
+            <p className="text-xs text-muted-foreground mb-4">Removing your account will delete your member profile. This cannot be undone.</p>
+            {!showDeleteConfirm ? (
+              <Button onClick={() => setShowDeleteConfirm(true)} variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10 h-9 px-4 rounded-xl text-xs font-semibold">
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete My Account
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-xs text-destructive font-medium">Type <span className="font-bold">DELETE</span> below to confirm account removal.</p>
+                </div>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={e => setDeleteConfirmText(e.target.value)}
+                  placeholder="Type DELETE to confirm"
+                  className="bg-background/50 border-destructive/40 text-foreground text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }} variant="outline" className="flex-1 border-border/50 h-9 rounded-xl text-xs">Cancel</Button>
+                  <Button onClick={deleteAccount} disabled={deleteConfirmText !== "DELETE" || deleting} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-9 rounded-xl text-xs font-bold">
+                    {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Confirm Delete"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="glass-panel rounded-2xl p-6">
