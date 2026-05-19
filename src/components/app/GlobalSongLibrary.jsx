@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag } from "lucide-react";
+import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag, ShieldCheck } from "lucide-react";
 
 const GlobalSongEntity = base44.entities.GlobalSong;
 
@@ -200,6 +200,9 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-foreground truncate leading-tight">{song.title}</p>
+                    {song.is_verified && (
+                      <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" title="Verified" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeClass}`}>
@@ -282,6 +285,19 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
                           <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3">{song.keys_patch_notes.split('\n')[0]}</p>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Source link */}
+                  {song.source_url && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <ShieldCheck className="w-3 h-3 text-accent" />
+                      <span>Verified source: </span>
+                      <a href={song.source_url} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-accent hover:underline truncate max-w-[200px]">
+                        worshiptogether.com
+                      </a>
                     </div>
                   )}
 
