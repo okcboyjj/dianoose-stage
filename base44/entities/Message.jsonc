@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "church_id": {
+      "type": "string"
+    },
+    "channel_id": {
+      "type": "string"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_initials": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "reactions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "reply_to_id": {
+      "type": "string"
+    },
+    "reply_to_preview": {
+      "type": "string"
+    },
+    "is_pinned": {
+      "type": "boolean"
+    },
+    "is_announcement": {
+      "type": "boolean"
+    },
+    "mentions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "link_type": {
+      "type": "string"
+    },
+    "link_id": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "Message"
+}

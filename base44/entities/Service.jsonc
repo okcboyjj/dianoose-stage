@@ -73,6 +73,14 @@
           }
         }
       }
+    },
+    "production_data": {
+      "type": "object",
+      "description": "Morning worship production assignments: role slots, mic assignments, IEM notes, production notes"
+    },
+    "song_rundown_data": {
+      "type": "object",
+      "description": "Per-song data: song_leader, arrangement_notes, transition"
     }
   },
   "required": [],

@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "church_id": {
+      "type": "string"
+    },
+    "church_name": {
+      "type": "string"
+    },
+    "invite_code": {
+      "type": "string"
+    },
+    "invited_by_id": {
+      "type": "string"
+    },
+    "invited_by_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "instrument": {
+      "type": "string"
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "expired"
+      ]
+    },
+    "expires_at": {
+      "type": "string"
+    },
+    "accepted_at": {
+      "type": "string"
+    },
+    "accepted_by_user_id": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "TeamInvite"
+}

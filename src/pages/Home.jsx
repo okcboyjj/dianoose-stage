@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, Menu, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
 import MobileSelect from "@/components/ui/MobileSelect";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
@@ -19,7 +19,10 @@ const MusicianSection = lazy(() => import("@/components/app/MusicianSection"));
 const AdminSection = lazy(() => import("@/components/app/AdminSection"));
 const SettingsSection = lazy(() => import("@/components/app/SettingsSection"));
 const NotificationsSection = lazy(() => import("@/components/app/NotificationsSection"));
-const MyStageSection = lazy(() => import("@/components/app/MyStageSection"));
+const MessageCenter = lazy(() => import("@/components/app/MessageCenter"));
+const MorningWorshipPanel = lazy(() => import("@/components/app/MorningWorshipPanel"));
+const DashboardSection = lazy(() => import("@/components/app/DashboardSection"));
+const InvitePanel = lazy(() => import("@/components/app/InvitePanel"));
 
 const SongEntity = base44.entities.Song;
 const ServiceEntity = base44.entities.Service;
@@ -1178,7 +1181,7 @@ const TAB_ROOTS = {
   dashboard: "dashboard",
   songs: "songs",
   services: "services",
-  mystage: "mystage",
+  messages: "messages",
   settings: "settings",
 };
 
@@ -1187,12 +1190,14 @@ const SECTION_TO_TAB = {
   dashboard: "dashboard",
   songs: "songs",
   services: "services",
-  mystage: "mystage",
+  messages: "messages",
   settings: "settings",
   mylibrary: "settings",
   musicians: "settings",
   notifications: "settings",
   admin: "settings",
+  morningworship: "services",
+  invite: "settings",
 };
 
 function MainApp({ onLogout }) {
@@ -1211,9 +1216,11 @@ function MainApp({ onLogout }) {
     dashboard: ["dashboard"],
     songs: ["songs"],
     services: ["services"],
-    mystage: ["mystage"],
+    messages: ["messages"],
     settings: ["settings"],
   });
+  // Track the active morning worship service
+  const [morningWorshipServiceId, setMorningWorshipServiceId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [songs, setSongs] = useState([]);
   const [services, setServices] = useState([]);
@@ -1323,10 +1330,12 @@ function MainApp({ onLogout }) {
   const navItems = [
     { id: "dashboard", icon: HomeIcon, label: "Dashboard", group: "Main" },
     { id: "services", icon: List, label: "Services", group: "Main" },
+    { id: "morningworship", icon: Music, label: "Morning Worship", group: "Main" },
     { id: "songs", icon: Music, label: "Song Library", group: "Main" },
+    { id: "messages", icon: Mail, label: "Messages", group: "Main" },
     { id: "mylibrary", icon: Star, label: "My Library", badge: myLibrary.length, group: "Personal" },
-    { id: "mystage", icon: Guitar, label: "My Stage", group: "Personal" },
     { id: "musicians", icon: Users, label: "Musicians", group: "Team" },
+    { id: "invite", icon: Users, label: "Invite Team", group: "Team" },
     { id: "notifications", icon: Bell, label: "Notifications", badge: notifications.filter(n => !n.is_read).length, group: "Other" },
     { id: "admin", icon: Shield, label: "Admin Panel", group: "Other" },
     { id: "settings", icon: Settings, label: "Settings", group: "Other" }
@@ -1388,42 +1397,37 @@ function MainApp({ onLogout }) {
   );
 
   const renderContent = () => {
-    if (activeSection === "dashboard") return (
-      <div key="dashboard" className="space-y-8 pb-12">
-        <AnimatedElement>
-          <div className="flex items-end justify-between">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-1">
-                {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; })()}{user?.first_name ? `, ${user.first_name}!` : "!"}
-              </h1>
-              <p className="text-sm text-muted-foreground font-medium">Here's everything you need for this week.</p>
-            </div>
-          </div>
-        </AnimatedElement>
-
-        <AnimatedElement delay={100}>
-          <CountdownTimer church={church} />
-        </AnimatedElement>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[
-            { label: "Total Songs", value: songs.length, icon: Music, color: "text-primary", bg: "bg-primary/10", nav: "songs" },
-            { label: "Services", value: services.length, icon: List, color: "text-accent", bg: "bg-accent/10", nav: "services" },
-            { label: "Team Members", value: members.length, icon: Users, color: "text-primary", bg: "bg-primary/10", nav: "musicians" },
-            { label: "My Library", value: myLibrary.length, icon: Star, color: "text-accent", bg: "bg-accent/10", nav: "mylibrary" }
-          ].map((stat, i) => (
-            <AnimatedElement key={i} delay={i * 80 + 200}>
-              <div onClick={() => navigateTo(stat.nav)} className="glass-panel rounded-2xl p-5 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group cursor-pointer">
-                <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                </div>
-                <div className="text-3xl font-bold text-foreground tracking-tight">{stat.value}</div>
-                <div className="text-xs text-muted-foreground font-medium mt-1">{stat.label}</div>
-              </div>
-            </AnimatedElement>
-          ))}
+    const sectionFallback2 = (
+      <div className="space-y-4 pb-12 animate-pulse">
+        <div className="h-8 w-48 bg-white/5 rounded-xl" />
+        <div className="h-4 w-72 bg-white/4 rounded-lg" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+          {[...Array(6)].map((_, i) => <div key={i} className="h-32 bg-white/4 rounded-xl border border-white/6" />)}
         </div>
       </div>
+    );
+
+    if (activeSection === "dashboard") return (
+      <Suspense fallback={sectionFallback2}>
+        <DashboardSection
+          church={church}
+          user={user}
+          songs={songs}
+          services={services}
+          members={members}
+          myLibrary={myLibrary}
+          notifications={notifications}
+          onNavigate={(section) => {
+            if (section === "morningworship") {
+              // Pre-select next upcoming service
+              const next = services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+              if (next) setMorningWorshipServiceId(next.id);
+            }
+            navigateTo(section);
+          }}
+          onRefresh={loadData}
+        />
+      </Suspense>
     );
 
     if (activeSection === "songs") return (
@@ -1503,10 +1507,54 @@ function MainApp({ onLogout }) {
 
     if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} members={members} currentUser={user} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
-    if (activeSection === "mystage") return <AnimatedElement key="mystage"><Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
+    if (activeSection === "messages") return (
+      <AnimatedElement key="messages">
+        <Suspense fallback={sectionFallback}>
+          <MessageCenter church={church} user={user} services={services} members={members} />
+        </Suspense>
+      </AnimatedElement>
+    );
+    if (activeSection === "morningworship") {
+      const mwService = morningWorshipServiceId
+        ? services.find(s => s.id === morningWorshipServiceId)
+        : services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+      return (
+        <AnimatedElement key="morningworship">
+          <div className="space-y-4 pb-12">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-foreground">Morning Worship</h1>
+              {services.filter(s => s.date && new Date(s.date) >= new Date()).length > 1 && (
+                <select
+                  value={morningWorshipServiceId || ""}
+                  onChange={e => setMorningWorshipServiceId(e.target.value)}
+                  className="bg-card border border-border/50 rounded-xl px-3 py-2 text-xs text-foreground outline-none"
+                >
+                  {services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date)).map(s => (
+                    <option key={s.id} value={s.id}>{s.name} — {s.date}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <Suspense fallback={sectionFallback}>
+              <MorningWorshipPanel service={mwService} songs={songs} members={members} isAdmin={isAdmin} onUpdate={() => loadData("morningworship")} />
+            </Suspense>
+          </div>
+        </AnimatedElement>
+      );
+    }
+    if (activeSection === "invite") return (
+      <AnimatedElement key="invite">
+        <div className="space-y-4 pb-12">
+          <h1 className="text-2xl font-bold text-foreground">Invite Team</h1>
+          <Suspense fallback={sectionFallback}>
+            <InvitePanel church={church} user={user} members={members} onRefresh={loadData} />
+          </Suspense>
+        </div>
+      </AnimatedElement>
+    );
     if (activeSection === "settings") return (
       <AnimatedElement key="settings"><Suspense fallback={sectionFallback}><SettingsSection
         church={church}
@@ -1618,7 +1666,7 @@ function MainApp({ onLogout }) {
             { id: "dashboard", icon: HomeIcon, label: "Home" },
             { id: "songs", icon: Music, label: "Songs" },
             { id: "services", icon: List, label: "Services" },
-            { id: "mystage", icon: Guitar, label: "Stage" },
+            { id: "messages", icon: Mail, label: "Messages" },
             { id: "settings", icon: Settings, label: "More" },
           ].map(item => {
             const isActive = activeTab === item.id;

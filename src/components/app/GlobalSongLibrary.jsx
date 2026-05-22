@@ -63,12 +63,23 @@ const KEY_COLORS = {
 
 const KEYS = ["All", "A", "Bb", "B", "C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab"];
 
+const SORT_OPTIONS = [
+  { id: "title", label: "A–Z" },
+  { id: "artist", label: "Artist" },
+  { id: "key", label: "Key" },
+  { id: "bpm_asc", label: "BPM ↑" },
+  { id: "bpm_desc", label: "BPM ↓" },
+  { id: "verified", label: "Verified" },
+  { id: "newest", label: "Newest" },
+];
+
 export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [keyFilter, setKeyFilter] = useState("All");
   const [artistFilter, setArtistFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("title");
   const [showFilters, setShowFilters] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [cloning, setCloning] = useState(null);
@@ -117,7 +128,17 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
       (s.tags || []).some(t => t.toLowerCase().includes(q));
     const matchKey = keyFilter === "All" || s.key === keyFilter;
     const matchArtist = artistFilter === "All" || s.artist === artistFilter;
-    return matchSearch && matchKey && matchArtist;
+    const matchVerified = sortBy !== "verified" || s.is_verified;
+    return matchSearch && matchKey && matchArtist && matchVerified;
+  }).sort((a, b) => {
+    if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
+    if (sortBy === "artist") return (a.artist || "").localeCompare(b.artist || "");
+    if (sortBy === "key") return (a.key || "").localeCompare(b.key || "");
+    if (sortBy === "bpm_asc") return (a.bpm || 0) - (b.bpm || 0);
+    if (sortBy === "bpm_desc") return (b.bpm || 0) - (a.bpm || 0);
+    if (sortBy === "verified") return (b.is_verified ? 1 : 0) - (a.is_verified ? 1 : 0);
+    if (sortBy === "newest") return (b.created_date || "").localeCompare(a.created_date || "");
+    return 0;
   });
 
   if (loading) return (
@@ -141,6 +162,15 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all ${showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border/50 text-muted-foreground hover:text-foreground"}`}>
           <Filter className="w-3.5 h-3.5" /> Filters
         </button>
+      </div>
+
+      {/* Sort pills */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {SORT_OPTIONS.map(s => (
+          <button key={s.id} onClick={() => setSortBy(s.id)} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border ${sortBy === s.id ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-card border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* Filter panel */}

@@ -131,6 +131,7 @@ function AddToLibraryModal({ songs, libraryIds, userId, churchId, onClose, onAdd
 export default function MyLibrarySection({ songs, myLibrary, user, church, onRefresh, onPreviewSong }) {
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
 
@@ -145,6 +146,15 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
     const matchCat = categoryFilter === "All" || e.category === categoryFilter;
     const matchSearch = !search || e.song?.title?.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
+  }).sort((a, b) => {
+    if (sortBy === "alpha") return (a.song?.title || "").localeCompare(b.song?.title || "");
+    if (sortBy === "artist") return (a.song?.artist || "").localeCompare(b.song?.artist || "");
+    if (sortBy === "key") return (a.preferred_key || a.song?.key || "").localeCompare(b.preferred_key || b.song?.key || "");
+    if (sortBy === "bpm") return (b.song?.bpm || 0) - (a.song?.bpm || 0);
+    if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === "favorites") return (b.song?.is_favorite ? 1 : 0) - (a.song?.is_favorite ? 1 : 0);
+    // newest = default (created_date desc)
+    return (b.created_date || "").localeCompare(a.created_date || "");
   });
 
   return (
@@ -170,6 +180,14 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
       <div className="flex items-center gap-3 bg-card border border-border/50 rounded-xl px-4 py-2.5 shadow-sm focus-within:border-primary/50 transition-all">
         <Search className="w-4 h-4 text-muted-foreground shrink-0" />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search my library..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 font-medium" />
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {[{ id: "newest", label: "Newest" }, { id: "alpha", label: "A–Z" }, { id: "artist", label: "Artist" }, { id: "key", label: "Key" }, { id: "bpm", label: "BPM" }, { id: "rating", label: "Rating" }, { id: "favorites", label: "⭐ Fav" }].map(s => (
+          <button key={s.id} onClick={() => setSortBy(s.id)} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border ${sortBy === s.id ? "bg-primary text-primary-foreground border-primary shadow-md" : "bg-card border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (

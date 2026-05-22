@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "properties": {
+    "church_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "team",
+        "service",
+        "direct",
+        "production"
+      ]
+    },
+    "service_id": {
+      "type": "string"
+    },
+    "member_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_default": {
+      "type": "boolean"
+    },
+    "last_message_at": {
+      "type": "string"
+    },
+    "last_message_preview": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "name": "Channel"
+}
