@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Check, X, Music, Clock, Search } from "lucide-react";
+import { Plus, Check, X, Music, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 const ServiceEntity = base44.entities.Service;

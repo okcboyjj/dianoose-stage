@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag, ShieldCheck, Play, Pause } from "lucide-react";
+import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag, ShieldCheck, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const GlobalSongEntity = base44.entities.GlobalSong;

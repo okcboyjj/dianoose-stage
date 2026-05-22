@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Music, Minus, Plus, Hash, Maximize2, ChevronRight, Guitar, Piano } from "lucide-react";
+import { X, Music } from "lucide-react";
 import { transposeFullChart, chartToNashville, ALL_KEYS, suggestCapo } from "./ChordTransposer";
 
 // ── Chord extraction from chart ───────────────────────────────────────────────

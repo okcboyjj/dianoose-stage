@@ -5,9 +5,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, X, Plus, Search, RefreshCw, Save, Trash2, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, X, Plus, Search, RefreshCw, Save, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
 import MobileSelect from "@/components/ui/MobileSelect";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
@@ -157,8 +156,7 @@ function PullToRefresh({ onRefresh, children, isMessages }) {
 // ─── Auth state ───────────────────────────────────────────────────────────────
 let globalUser = null;
 let globalChurch = null;
-let authListeners = [];
-const notifyAuthListeners = () => authListeners.forEach(fn => fn());
+
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }) {
@@ -1246,8 +1244,6 @@ function MainApp({ onLogout }) {
   const [previewSong, setPreviewSong] = useState(null);
   const [previewTab, setPreviewTab] = useState('chart');
   const [songSearch, setSongSearch] = useState("");
-  const [memberSearch, setMemberSearch] = useState("");
-  const [serviceFilter, setServiceFilter] = useState("All");
   const [songKeyFilter, setSongKeyFilter] = useState("All");
   const [songSort, setSongSort] = useState("recent");
   const [songLibTab, setSongLibTab] = useState("church");

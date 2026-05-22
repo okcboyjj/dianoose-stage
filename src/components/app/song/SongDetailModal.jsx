@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Trash2, Loader2, Music, Youtube, Wrench, Plus } from "lucide-react";
+import { X, Save, Trash2, Loader2, Music, Plus } from "lucide-react";
 const ChartBuilderModal = lazy(() => import("./ChartBuilderModal"));
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
