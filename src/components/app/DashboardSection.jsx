@@ -279,7 +279,7 @@ export default function DashboardSection({ church, user, songs, services, member
           {[
             { label: "Plan a Service", icon: Calendar, nav: "services", color: "from-primary/20 to-primary/5" },
             { label: "Browse Songs", icon: Music, nav: "songs", color: "from-accent/20 to-accent/5" },
-            { label: "Morning Worship", icon: Zap, nav: "morningworship", color: "from-yellow-500/20 to-yellow-500/5" },
+            { label: "My Stage", icon: Zap, nav: "mystage", color: "from-yellow-500/20 to-yellow-500/5" },
             { label: "Team Messages", icon: Users, nav: "messages", color: "from-green-500/20 to-green-500/5" },
           ].map((qa, i) => (
             <button key={i} onClick={() => onNavigate(qa.nav)} className={`flex items-center gap-3 p-4 rounded-xl border border-border/40 bg-gradient-to-br ${qa.color} hover:border-primary/40 transition-all group`}>
