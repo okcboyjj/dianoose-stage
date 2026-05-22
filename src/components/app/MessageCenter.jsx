@@ -188,7 +188,7 @@ export default function MessageCenter({ church, user, services, members }) {
   const [replyTo, setReplyTo] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showChannelList, setShowChannelList] = useState(true);
-  const bottomRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const unsubRef = useRef(null);
   const [unreadMap, setUnreadMap] = useState({});
 
@@ -246,7 +246,9 @@ export default function MessageCenter({ church, user, services, members }) {
   }, [activeChannel?.id, loadMessages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   const selectChannel = (ch) => {
@@ -301,7 +303,7 @@ export default function MessageCenter({ church, user, services, members }) {
   const currentUserId = user?.user_id || user?.id;
 
   return (
-    <div className="flex gap-0 rounded-2xl overflow-hidden border border-border/30 bg-card/30" style={{ height: "calc(100vh - 200px)", minHeight: 420 }}>
+    <div className="flex gap-0 rounded-2xl overflow-hidden border border-border/30 bg-card/30 h-full min-h-0">
 
       {/* Channel sidebar */}
       <div className={`${showChannelList ? "flex" : "hidden sm:flex"} flex-col w-full sm:w-64 border-r border-border/30 bg-background/30 shrink-0`}>
@@ -391,7 +393,7 @@ export default function MessageCenter({ church, user, services, members }) {
             )}
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
               {messages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center py-12">
                   <div className="text-4xl mb-3">{CHANNEL_ICONS[activeChannel.type]}</div>
@@ -409,7 +411,6 @@ export default function MessageCenter({ church, user, services, members }) {
                   onPin={handlePin}
                 />
               ))}
-              <div ref={bottomRef} />
             </div>
 
             {/* Reply preview */}

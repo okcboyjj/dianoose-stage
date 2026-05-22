@@ -110,7 +110,7 @@ const AnimatedElement = ({ children, className = "", delay = 0 }) => {
 };
 
 // ─── Pull To Refresh ──────────────────────────────────────────────────────────
-function PullToRefresh({ onRefresh, children }) {
+function PullToRefresh({ onRefresh, children, isMessages }) {
   const startY = useRef(null);
   const [pulling, setPulling] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -136,7 +136,7 @@ function PullToRefresh({ onRefresh, children }) {
 
   return (
     <div
-      className="flex-1 overflow-y-auto relative"
+      className={isMessages ? "flex-1 min-h-0 overflow-hidden relative flex flex-col" : "flex-1 overflow-y-auto relative"}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -1559,11 +1559,11 @@ function MainApp({ onLogout }) {
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
     if (activeSection === "messages") return (
-      <AnimatedElement key="messages" className="h-full">
+      <div key="messages" className="h-full flex flex-col min-h-0">
         <Suspense fallback={sectionFallback}>
           <MessageCenter church={church} user={user} services={services} members={members} />
         </Suspense>
-      </AnimatedElement>
+      </div>
     );
     if (activeSection === "morningworship") {
       const mwService = morningWorshipServiceId
@@ -1690,8 +1690,8 @@ function MainApp({ onLogout }) {
           </div>
         </div>
         
-        <PullToRefresh onRefresh={() => loadData(activeSection)}>
-          <div className={activeSection === "messages" ? "h-full px-4 sm:px-8 pb-2 sm:pb-4 pt-4 sm:pt-8 flex flex-col" : "p-4 sm:p-8 scrollbar-hide main-content-mobile sm:pb-8"}>
+        <PullToRefresh onRefresh={() => loadData(activeSection)} isMessages={activeSection === "messages"}>
+          <div className={activeSection === "messages" ? "flex flex-col min-h-0 h-full px-4 sm:px-8 pb-2 sm:pb-4 pt-4 sm:pt-8" : "p-4 sm:p-8 scrollbar-hide main-content-mobile sm:pb-8"}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeSection}
@@ -1699,7 +1699,7 @@ function MainApp({ onLogout }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                className={activeSection === "messages" ? "flex-1 min-h-0" : ""}
+                className={activeSection === "messages" ? "flex-1 min-h-0 flex flex-col" : ""}
               >
                 {renderContent()}
               </motion.div>
