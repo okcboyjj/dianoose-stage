@@ -29,7 +29,9 @@ export default function SpotifySearchModal({ church, onClose, onImported }) {
       setError(null);
       try {
         const res = await base44.functions.invoke("spotifySearch", { query: val });
-        setResults(res?.results || []);
+        // invoke may return data directly or nested under .data
+        const data = res?.data ?? res;
+        setResults(data?.results || []);
       } catch (e) {
         setError("Search failed. Check your Spotify credentials.");
       } finally {
