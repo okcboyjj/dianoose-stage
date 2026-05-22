@@ -21,7 +21,6 @@ const AdminSection = lazy(() => import("@/components/app/AdminSection"));
 const SettingsSection = lazy(() => import("@/components/app/SettingsSection"));
 const NotificationsSection = lazy(() => import("@/components/app/NotificationsSection"));
 const MessageCenter = lazy(() => import("@/components/app/MessageCenter"));
-const MorningWorshipPanel = lazy(() => import("@/components/app/MorningWorshipPanel"));
 const MyStageSection = lazy(() => import("@/components/app/MyStageSection"));
 const DashboardSection = lazy(() => import("@/components/app/DashboardSection"));
 const InvitePanel = lazy(() => import("@/components/app/InvitePanel"));
@@ -1198,7 +1197,6 @@ const SECTION_TO_TAB = {
   musicians: "settings",
   notifications: "settings",
   admin: "settings",
-  morningworship: "services",
   mystage: "settings",
   invite: "settings",
 };
@@ -1222,8 +1220,7 @@ function MainApp({ onLogout }) {
     messages: ["messages"],
     settings: ["settings"],
   });
-  // Track the active morning worship service
-  const [morningWorshipServiceId, setMorningWorshipServiceId] = useState(null);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [songs, setSongs] = useState([]);
   const [services, setServices] = useState([]);
@@ -1334,7 +1331,6 @@ function MainApp({ onLogout }) {
   const navItems = [
     { id: "dashboard", icon: HomeIcon, label: "Dashboard", group: "Main" },
     { id: "services", icon: List, label: "Services", group: "Main" },
-    { id: "morningworship", icon: Music, label: "Morning Worship", group: "Main" },
     { id: "songs", icon: Music, label: "Song Library", group: "Main" },
     { id: "messages", icon: Mail, label: "Messages", group: "Main" },
     { id: "mystage", icon: Guitar, label: "My Stage", group: "Personal" },
@@ -1422,14 +1418,7 @@ function MainApp({ onLogout }) {
           members={members}
           myLibrary={myLibrary}
           notifications={notifications}
-          onNavigate={(section) => {
-            if (section === "morningworship") {
-              // Pre-select next upcoming service
-              const next = services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-              if (next) setMorningWorshipServiceId(next.id);
-            }
-            navigateTo(section);
-          }}
+          onNavigate={navigateTo}
           onRefresh={loadData}
         />
       </Suspense>
@@ -1565,34 +1554,7 @@ function MainApp({ onLogout }) {
         </Suspense>
       </div>
     );
-    if (activeSection === "morningworship") {
-      const mwService = morningWorshipServiceId
-        ? services.find(s => s.id === morningWorshipServiceId)
-        : services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))[0];
-      return (
-        <AnimatedElement key="morningworship">
-          <div className="space-y-4 pb-12">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-foreground">Morning Worship</h1>
-              {services.filter(s => s.date && new Date(s.date) >= new Date()).length > 1 && (
-                <select
-                  value={morningWorshipServiceId || ""}
-                  onChange={e => setMorningWorshipServiceId(e.target.value)}
-                  className="bg-card border border-border/50 rounded-xl px-3 py-2 text-xs text-foreground outline-none"
-                >
-                  {services.filter(s => s.date && new Date(s.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date)).map(s => (
-                    <option key={s.id} value={s.id}>{s.name} — {s.date}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-            <Suspense fallback={sectionFallback}>
-              <MorningWorshipPanel service={mwService} songs={songs} members={members} isAdmin={isAdmin} onUpdate={() => loadData("morningworship")} />
-            </Suspense>
-          </div>
-        </AnimatedElement>
-      );
-    }
+
     if (activeSection === "invite") return (
       <AnimatedElement key="invite">
         <div className="space-y-4 pb-12">

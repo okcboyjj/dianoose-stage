@@ -28,7 +28,6 @@ function App() {
               <Route path="/mylibrary" element={<Home />} />
               <Route path="/mystage" element={<Home />} />
               <Route path="/messages" element={<Home />} />
-              <Route path="/morningworship" element={<Home />} />
               <Route path="/invite" element={<Home />} />
               <Route path="/musicians" element={<Home />} />
               <Route path="/notifications" element={<Home />} />
