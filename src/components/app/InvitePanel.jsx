@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Mail, Link, Copy, Check, UserPlus, Clock, X, Loader2, Send, Share2, MessageSquare } from "lucide-react";
+import { Link, Copy, Check, UserPlus, X, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -43,15 +43,12 @@ function InviteRow({ invite, onRevoke }) {
 
 export default function InvitePanel({ church, user, members, onRefresh }) {
   const [tab, setTab] = useState("link");
-  const [email, setEmail] = useState("");
   const [role, setRole] = useState("Musician");
   const [instrument, setInstrument] = useState("");
-  const [sending, setSending] = useState(false);
   const [invites, setInvites] = useState([]);
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
-  const [sent, setSent] = useState(false);
 
   const teamCode = church?.team_code || "";
   const joinUrl = `${window.location.origin}/?join=${teamCode}`;
@@ -106,56 +103,6 @@ export default function InvitePanel({ church, user, members, onRefresh }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const sendEmailInvite = async () => {
-    if (!email.trim()) return;
-    setSending(true);
-    try {
-      const code = generateInviteCode();
-      const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      await TeamInviteEntity.create({
-        church_id: church.id,
-        church_name: church.name,
-        invite_code: code,
-        invited_by_id: user?.user_id || user?.id,
-        invited_by_name: `${user?.first_name} ${user?.last_name}`,
-        email: email.trim(),
-        role,
-        instrument,
-        status: "pending",
-        expires_at: expires
-      });
-
-      // Send email via integration
-      const inviteLink = `${window.location.origin}/?invite=${code}`;
-      await base44.integrations.Core.SendEmail({
-        to: email.trim(),
-        subject: `You're invited to join ${church.name} on Dianoose Stage`,
-        body: `
-Hi there!
-
-${user?.first_name} ${user?.last_name} has invited you to join the ${church.name} worship team on Dianoose Stage.
-
-Your Role: ${role}${instrument ? ` (${instrument})` : ""}
-
-Click the link below to join — it takes less than a minute:
-${inviteLink}
-
-Or use the team code: ${teamCode}
-at ${window.location.origin}
-
-This invite expires in 7 days.
-
-See you on stage!
-— Dianoose Stage
-        `.trim()
-      });
-
-      setEmail("");
-      setSent(true);
-      setTimeout(() => setSent(false), 3000);
-    } finally { setSending(false); }
-  };
-
   const loadInvites = async () => {
     setLoadingInvites(true);
     try {
@@ -173,7 +120,7 @@ See you on stage!
     <div className="space-y-4">
       {/* Tab switcher */}
       <div className="flex gap-1 bg-secondary/20 rounded-xl p-1">
-        {[{ id: "link", label: "🔗 Share Link" }, { id: "email", label: "📧 Email Invite" }, { id: "history", label: "📋 Sent Invites" }].map(t => (
+        {[{ id: "link", label: "🔗 Share Link" }, { id: "history", label: "📋 Sent Invites" }].map(t => (
           <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "history") loadInvites(); }} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab === t.id ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
             {t.label}
           </button>
@@ -235,46 +182,6 @@ See you on stage!
                 {generatedLink && (
                   <p className="text-[10px] text-muted-foreground bg-secondary/30 rounded-lg p-2 font-mono truncate">{generatedLink}</p>
                 )}
-              </div>
-            </div>
-          )}
-
-          {tab === "email" && (
-            <div className="space-y-4">
-              <div className="bg-card/50 border border-border/40 rounded-xl p-4 space-y-3">
-                <p className="text-xs font-bold text-foreground">Send Email Invitation</p>
-                <div>
-                  <label className="text-[10px] text-muted-foreground font-medium">Email Address</label>
-                  <Input value={email} onChange={e => setEmail(e.target.value)} placeholder="teammate@email.com" type="email" className="mt-1 bg-background/50 border-border/50 text-sm h-9" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Role</label>
-                    <select value={role} onChange={e => setRole(e.target.value)} className="w-full mt-1 bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground outline-none">
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground font-medium">Instrument</label>
-                    <select value={instrument} onChange={e => setInstrument(e.target.value)} className="w-full mt-1 bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground outline-none">
-                      <option value="">None</option>
-                      {INSTRUMENTS.map(i => <option key={i} value={i}>{i}</option>)}
-                    </select>
-                  </div>
-                </div>
-                {sent ? (
-                  <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 text-sm text-green-400 font-semibold">
-                    <Check className="w-4 h-4" /> Invitation sent!
-                  </div>
-                ) : (
-                  <Button onClick={sendEmailInvite} disabled={sending || !email.trim()} className="w-full bg-primary text-primary-foreground h-9 rounded-xl text-xs font-semibold">
-                    {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-3.5 h-3.5 mr-2" /> Send Invitation</>}
-                  </Button>
-                )}
-              </div>
-              <div className="bg-secondary/20 border border-border/30 rounded-xl p-4">
-                <p className="text-xs font-bold text-foreground mb-1">What they'll receive</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">A personal email with a join link, pre-assigned role, and the team join code. Link expires in 7 days.</p>
               </div>
             </div>
           )}
