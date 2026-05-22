@@ -207,9 +207,9 @@ export default function DashboardSection({ church, user, songs, services, member
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Total Songs", value: songs.length, icon: Music, color: "text-primary", bg: "bg-primary/10", nav: "songs" },
-            { label: "Services", value: services.length, icon: List, color: "text-accent", bg: "bg-accent/10", nav: "services" },
+            { label: "Services", value: services.length, icon: List, color: "text-primary", bg: "bg-primary/10", nav: "services" },
             { label: "Team Members", value: members.length, icon: Users, color: "text-primary", bg: "bg-primary/10", nav: "musicians" },
-            { label: "My Library", value: myLibrary.length, icon: Star, color: "text-accent", bg: "bg-accent/10", nav: "mylibrary" }
+            { label: "My Library", value: myLibrary.length, icon: Star, color: "text-primary", bg: "bg-primary/10", nav: "mylibrary" }
           ].map((stat, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}>
               <div onClick={() => onNavigate(stat.nav)} className="glass-panel rounded-2xl p-4 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group cursor-pointer">
@@ -278,7 +278,7 @@ export default function DashboardSection({ church, user, songs, services, member
         <div className="grid grid-cols-2 gap-2">
           {[
             { label: "Plan a Service", icon: Calendar, nav: "services", color: "from-primary/20 to-primary/5" },
-            { label: "Browse Songs", icon: Music, nav: "songs", color: "from-accent/20 to-accent/5" },
+            { label: "Browse Songs", icon: Music, nav: "songs", color: "from-primary/20 to-primary/5" },
             { label: "My Library", icon: Star, nav: "mylibrary", color: "from-yellow-500/20 to-yellow-500/5" },
             { label: "Team Messages", icon: Users, nav: "messages", color: "from-green-500/20 to-green-500/5" },
           ].map((qa, i) => (
