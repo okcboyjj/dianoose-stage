@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { applyChurchTheme } from "@/lib/applyTheme.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -1248,8 +1249,12 @@ function MainApp({ onLogout }) {
   const [songSort, setSongSort] = useState("recent");
   const [songLibTab, setSongLibTab] = useState("church");
 
-  const church = globalChurch;
+  // React state for church so onChurchUpdate triggers re-renders
+  const [church, setChurch] = useState(globalChurch);
   const user = globalUser;
+
+  // Apply theme whenever church changes
+  useEffect(() => { applyChurchTheme(church); }, [church]);
   const isAdmin = user?.role === "Admin" || user?.role === "Worship Leader";
 
   // Active tab derived from current section
@@ -1548,7 +1553,7 @@ function MainApp({ onLogout }) {
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
     if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
+    if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; setChurch(updated); }} /></Suspense></AnimatedElement>;
     if (activeSection === "messages") return (
       <div key="messages" className="h-full flex flex-col min-h-0">
         <Suspense fallback={sectionFallback}>
@@ -1571,7 +1576,7 @@ function MainApp({ onLogout }) {
       <AnimatedElement key="settings"><Suspense fallback={sectionFallback}><SettingsSection
         church={church}
         user={user}
-        onChurchUpdate={(updated) => { globalChurch = updated; }}
+        onChurchUpdate={(updated) => { globalChurch = updated; setChurch(updated); }}
         onUserUpdate={(updated) => { globalUser = updated; }}
       /></Suspense></AnimatedElement>
     );
@@ -1745,6 +1750,7 @@ export default function Home() {
           const churchList = await ChurchEntity.filter({ id: members[0].church_id });
           globalUser = { ...user, ...members[0] };
           globalChurch = churchList[0] || null;
+          applyChurchTheme(globalChurch);
           setAuthed(true);
         } else {
           // Auth exists but no member profile yet.
@@ -1767,6 +1773,7 @@ export default function Home() {
             });
             globalUser = { ...user, ...repairedMember };
             globalChurch = church;
+            applyChurchTheme(globalChurch);
             setAuthed(true);
           }
           // If no church at all — fall through to login screen so user can join/create

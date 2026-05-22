@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { applyChurchTheme } from "@/lib/applyTheme.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +66,14 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const setC = (k, v) => setChurchForm(f => ({ ...f, [k]: v }));
   const setSc = (k, v) => setSchedForm(f => ({ ...f, [k]: v }));
   const setP = (k, v) => setProfileForm(f => ({ ...f, [k]: v }));
-  const setT = (k, v) => setThemeForm(f => ({ ...f, [k]: v }));
+  const setT = (k, v) => {
+    setThemeForm(f => {
+      const next = { ...f, [k]: v };
+      // Live-preview: apply to CSS vars immediately as the picker changes
+      applyChurchTheme({ accent_color: next.accent_color, glow_color: next.glow_color });
+      return next;
+    });
+  };
 
   const saveChurch = async () => {
     setChurchSaving(true);
@@ -87,7 +95,9 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
     setThemeSaving(true);
     await ChurchEntity.update(church.id, themeForm);
     setThemeSaving(false); setThemeSaved(true);
-    onChurchUpdate({ ...church, ...themeForm });
+    const updated = { ...church, ...themeForm };
+    applyChurchTheme(updated);
+    onChurchUpdate(updated);
     setTimeout(() => setThemeSaved(false), 2500);
   };
 
