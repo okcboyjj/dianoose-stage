@@ -1501,7 +1501,8 @@ function MainApp({ onLogout }) {
                 if (songSort === "bpm_asc") return (Number(a.bpm) || 0) - (Number(b.bpm) || 0);
                 if (songSort === "bpm_desc") return (Number(b.bpm) || 0) - (Number(a.bpm) || 0);
                 if (songSort === "favorites") return (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
-                return 0; // "recent" — keep default entity order
+                // "recent" — sort by created_date descending
+                return new Date(b.created_date || 0) - new Date(a.created_date || 0);
               }).map((song) => (
                 <SongCard
                   key={song.id}

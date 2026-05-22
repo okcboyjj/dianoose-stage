@@ -66,20 +66,24 @@ export default function InvitePanel({ church, user, members, onRefresh }) {
       try {
         await navigator.share({ title: `Join ${church?.name} on Dianoose Stage`, text: shareText, url: shareUrl });
       } catch (e) {
-        if (e.name !== "AbortError") fallbackShare(shareUrl, shareText);
+        if (e.name !== "AbortError") await fallbackShare(shareUrl);
       }
     } else {
-      fallbackShare(shareUrl, shareText);
+      await fallbackShare(shareUrl);
     }
   };
 
-  const fallbackShare = (url, text) => {
-    // Try SMS link first, fallback to clipboard
-    const smsBody = encodeURIComponent(`${text} ${url}`);
-    const smsLink = `sms:?body=${smsBody}`;
-    const a = document.createElement("a");
-    a.href = smsLink;
-    a.click();
+  const fallbackShare = async (url) => {
+    // Copy to clipboard as reliable fallback
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Last resort: open SMS
+      const smsLink = `sms:?body=${encodeURIComponent(url)}`;
+      window.open(smsLink);
+    }
   };
 
   const generatePersonalLink = async () => {
@@ -145,7 +149,7 @@ export default function InvitePanel({ church, user, members, onRefresh }) {
                 </button>
                 <button onClick={() => shareInvite(joinUrl)} className="flex items-center justify-center gap-2 w-full bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-all">
                   <Share2 className="w-4 h-4 shrink-0" />
-                  Share Invite (Text / Messages)
+                  {copied ? "✓ Link Copied!" : "Share Invite (Text / Messages)"}
                 </button>
               </div>
 

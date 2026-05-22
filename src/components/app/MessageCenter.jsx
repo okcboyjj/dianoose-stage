@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Plus, Send, Hash, Users, ChevronRight, Loader2, Pin, Megaphone, Reply, X, Image, FileText, Music, List, AtSign, Smile } from "lucide-react";
+import { Plus, Send, Users, ChevronRight, Loader2, Pin, Megaphone, Reply, X, FileText, Music, List, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -261,8 +261,7 @@ export default function MessageCenter({ church, user, services, members }) {
     if (!input.trim() || !activeChannel || sending) return;
     setSending(true);
     const content = input.trim();
-    setInput("");
-    setReplyTo(null);
+    const prevReplyTo = replyTo;
     try {
       const nameParts = [user?.first_name, user?.last_name].filter(Boolean);
       const initials = nameParts.map(p => p[0]).join("").toUpperCase();
@@ -274,10 +273,12 @@ export default function MessageCenter({ church, user, services, members }) {
         sender_initials: initials || "?",
         content,
         reactions: [],
-        ...(replyTo ? { reply_to_id: replyTo.id, reply_to_preview: replyTo.content?.slice(0, 60) } : {})
+        ...(prevReplyTo ? { reply_to_id: prevReplyTo.id, reply_to_preview: prevReplyTo.content?.slice(0, 60) } : {})
       };
       await MessageEntity.create(msgData);
-      // Update channel last message
+      // Only clear input and reply after successful send
+      setInput("");
+      setReplyTo(null);
       await ChannelEntity.update(activeChannel.id, {
         last_message_at: new Date().toISOString(),
         last_message_preview: `${nameParts[0] || "Someone"}: ${content.slice(0, 50)}`
