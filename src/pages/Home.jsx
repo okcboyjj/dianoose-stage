@@ -21,7 +21,6 @@ const AdminSection = lazy(() => import("@/components/app/AdminSection"));
 const SettingsSection = lazy(() => import("@/components/app/SettingsSection"));
 const NotificationsSection = lazy(() => import("@/components/app/NotificationsSection"));
 const MessageCenter = lazy(() => import("@/components/app/MessageCenter"));
-const MyStageSection = lazy(() => import("@/components/app/MyStageSection"));
 const DashboardSection = lazy(() => import("@/components/app/DashboardSection"));
 const InvitePanel = lazy(() => import("@/components/app/InvitePanel"));
 
@@ -1197,7 +1196,6 @@ const SECTION_TO_TAB = {
   musicians: "settings",
   notifications: "settings",
   admin: "settings",
-  mystage: "settings",
   invite: "settings",
 };
 
@@ -1304,7 +1302,7 @@ function MainApp({ onLogout }) {
       setSongs(s); setServices(svc);
 
       // Fetch heavier per-section data lazily
-      if (["dashboard","musicians","mystage","admin","services"].includes(section)) {
+      if (["dashboard","musicians","admin","services"].includes(section)) {
         const m = await ChurchMemberEntity.filter({ church_id: church.id });
         setMembers(m);
       }
@@ -1312,7 +1310,7 @@ function MainApp({ onLogout }) {
         const n = await NotificationEntity.filter({ user_id: uid });
         setNotifications(n);
       }
-      if (["dashboard","mylibrary","mystage"].includes(section)) {
+      if (["dashboard","mylibrary"].includes(section)) {
         const ml = await MyLibrarySongEntity.filter({ user_id: uid });
         setMyLibrary(ml);
       }
@@ -1333,7 +1331,6 @@ function MainApp({ onLogout }) {
     { id: "services", icon: List, label: "Services", group: "Main" },
     { id: "songs", icon: Music, label: "Song Library", group: "Main" },
     { id: "messages", icon: Mail, label: "Messages", group: "Main" },
-    { id: "mystage", icon: Guitar, label: "My Stage", group: "Personal" },
     { id: "mylibrary", icon: Star, label: "My Library", badge: myLibrary.length, group: "Personal" },
     { id: "musicians", icon: Users, label: "Musicians", group: "Team" },
     { id: "invite", icon: Users, label: "Invite Members", group: "Team" },
@@ -1536,13 +1533,6 @@ function MainApp({ onLogout }) {
     );
 
     if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} members={members} currentUser={user} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
-    if (activeSection === "mystage") return (
-      <AnimatedElement key="mystage">
-        <Suspense fallback={sectionFallback}>
-          <MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} />
-        </Suspense>
-      </AnimatedElement>
-    );
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
     if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;

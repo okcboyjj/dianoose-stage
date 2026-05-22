@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Music, List, Users, Star, Check, X, HelpCircle, Bell, Clock, ChevronRight, Zap, Calendar, ArrowRight, Plus } from "lucide-react";
+import { Music, List, Users, Star, Check, X, HelpCircle, Bell, Clock, ChevronRight, Calendar, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ServiceAssignmentEntity = base44.entities.ServiceAssignment;
@@ -279,7 +279,7 @@ export default function DashboardSection({ church, user, songs, services, member
           {[
             { label: "Plan a Service", icon: Calendar, nav: "services", color: "from-primary/20 to-primary/5" },
             { label: "Browse Songs", icon: Music, nav: "songs", color: "from-accent/20 to-accent/5" },
-            { label: "My Stage", icon: Zap, nav: "mystage", color: "from-yellow-500/20 to-yellow-500/5" },
+            { label: "My Library", icon: Star, nav: "mylibrary", color: "from-yellow-500/20 to-yellow-500/5" },
             { label: "Team Messages", icon: Users, nav: "messages", color: "from-green-500/20 to-green-500/5" },
           ].map((qa, i) => (
             <button key={i} onClick={() => onNavigate(qa.nav)} className={`flex items-center gap-3 p-4 rounded-xl border border-border/40 bg-gradient-to-br ${qa.color} hover:border-primary/40 transition-all group`}>
