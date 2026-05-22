@@ -22,6 +22,7 @@ const SettingsSection = lazy(() => import("@/components/app/SettingsSection"));
 const NotificationsSection = lazy(() => import("@/components/app/NotificationsSection"));
 const MessageCenter = lazy(() => import("@/components/app/MessageCenter"));
 const MorningWorshipPanel = lazy(() => import("@/components/app/MorningWorshipPanel"));
+const MyStageSection = lazy(() => import("@/components/app/MyStageSection"));
 const DashboardSection = lazy(() => import("@/components/app/DashboardSection"));
 const InvitePanel = lazy(() => import("@/components/app/InvitePanel"));
 
@@ -1100,7 +1101,7 @@ function SongModal({ song, onClose, onSave, churchId }) {
 }
 
 // ─── Song Card ────────────────────────────────────────────────────────────────
-function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
+function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFavorite }) {
   const sections = song.arrangement_sections || [];
   const displayKey = preferredKey || song.key;
   const extraSections = sections.length > 3 ? sections.length - 3 : 0;
@@ -1125,7 +1126,7 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey }) {
               <span className="text-[10px] font-bold text-primary">{displayKey}</span>
             </div>
           )}
-          <button onClick={e => e.stopPropagation()} className="text-muted-foreground hover:text-yellow-400 transition-colors">
+          <button onClick={e => { e.stopPropagation(); onToggleFavorite?.(song); }} className="text-muted-foreground hover:text-yellow-400 transition-colors">
             <Star className={`w-4 h-4 ${song.is_favorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
           </button>
         </div>
@@ -1198,6 +1199,7 @@ const SECTION_TO_TAB = {
   notifications: "settings",
   admin: "settings",
   morningworship: "services",
+  mystage: "settings",
   invite: "settings",
 };
 
@@ -1334,6 +1336,7 @@ function MainApp({ onLogout }) {
     { id: "morningworship", icon: Music, label: "Morning Worship", group: "Main" },
     { id: "songs", icon: Music, label: "Song Library", group: "Main" },
     { id: "messages", icon: Mail, label: "Messages", group: "Main" },
+    { id: "mystage", icon: Guitar, label: "My Stage", group: "Personal" },
     { id: "mylibrary", icon: Star, label: "My Library", badge: myLibrary.length, group: "Personal" },
     { id: "musicians", icon: Users, label: "Musicians", group: "Team" },
     { id: "invite", icon: Users, label: "Invite Team", group: "Team" },
@@ -1437,7 +1440,7 @@ function MainApp({ onLogout }) {
           <div className="flex sm:items-center justify-between flex-col sm:flex-row gap-4">
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Song Library</h1>
-              <p className="text-sm text-muted-foreground font-medium">{songs.length} church songs · 62 in global catalog</p>
+              <p className="text-sm text-muted-foreground font-medium">{songs.length} songs in library</p>
             </div>
             <Button onClick={() => { setEditSong(null); setShowSongModal(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"><Plus className="w-4 h-4 mr-2" /> Add Song</Button>
           </div>
@@ -1481,10 +1484,23 @@ function MainApp({ onLogout }) {
                   onEdit={() => { setEditSong(song); setShowSongModal(true); }}
                   onDelete={async () => { await SongEntity.delete(song.id); loadData(); }}
                   onPreview={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }}
+                  onToggleFavorite={async (s) => { await SongEntity.update(s.id, { is_favorite: !s.is_favorite }); loadData(); }}
                 />
               ))}
+              {songs.filter(s => {
+                if (songKeyFilter === "★") return s.is_favorite;
+                return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
+              }).length === 0 && songs.length > 0 && (
+                <div className="text-center py-12 text-muted-foreground col-span-full">
+                  <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm font-medium">No songs match this filter.</p>
+                  <button onClick={() => { setSongSearch(""); setSongKeyFilter("All"); }} className="mt-3 text-xs font-semibold text-primary hover:underline min-h-[44px] inline-flex items-center">
+                    Clear filters
+                  </button>
+                </div>
+              )}
               {songs.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
+                <div className="text-center py-12 text-muted-foreground col-span-full">
                   <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm font-medium">No songs yet.</p>
                   <p className="text-xs mt-1">Browse the <button onClick={() => setSongLibTab("global")} className="text-primary underline min-h-[44px] inline-flex items-center">Global Catalog</button> to add songs instantly.</p>
@@ -1507,6 +1523,13 @@ function MainApp({ onLogout }) {
     );
 
     if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} members={members} currentUser={user} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "mystage") return (
+      <AnimatedElement key="mystage">
+        <Suspense fallback={sectionFallback}>
+          <MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} />
+        </Suspense>
+      </AnimatedElement>
+    );
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
     if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;

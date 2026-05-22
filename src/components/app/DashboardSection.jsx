@@ -162,10 +162,12 @@ export default function DashboardSection({ church, user, songs, services, member
 
   const userId = user?.user_id || user?.id;
 
-  useEffect(() => {
+  const reloadAssignments = () => {
     if (!userId) return;
     ServiceAssignmentEntity.filter({ user_id: userId, status: "pending" }).then(setAssignments).catch(() => {});
-  }, [userId]);
+  };
+
+  useEffect(() => { reloadAssignments(); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const upcomingServices = services
     .filter(s => s.date && new Date(s.date) >= new Date(new Date().setHours(0,0,0,0)))
@@ -237,7 +239,7 @@ export default function DashboardSection({ church, user, songs, services, member
                   key={a.id}
                   assignment={a}
                   service={svc}
-                  onStatusUpdate={onRefresh}
+                  onStatusUpdate={() => { reloadAssignments(); onRefresh(); }}
                 />
               );
             })}

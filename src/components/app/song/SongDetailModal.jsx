@@ -25,6 +25,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
   const [tab, setTab] = useState('details');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [saveError, setSaveError] = useState(null);
   const [arrangementSections, setArrangementSections] = useState(song?.arrangement_sections || []);
   const [customSection, setCustomSection] = useState('');
   const [showAddSection, setShowAddSection] = useState(false);
@@ -53,21 +54,25 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
-    setSaving(true);
+    setSaving(true); setSaveError(null);
     try {
       const payload = { ...form, church_id: churchId, arrangement_sections: arrangementSections };
       if (song?.id) await SongEntity.update(song.id, payload);
       else await SongEntity.create(payload);
       onSave();
+    } catch {
+      setSaveError("Save failed. Please try again.");
     } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     if (!song?.id) return;
-    setDeleting(true);
+    setDeleting(true); setSaveError(null);
     try {
       await SongEntity.delete(song.id);
       onSave();
+    } catch {
+      setSaveError("Delete failed. Please try again.");
     } finally { setDeleting(false); }
   };
 
@@ -215,12 +220,12 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-0 px-6 pt-1 pb-0 shrink-0 border-b border-white/10">
+          <div className="flex gap-0 px-2 pt-1 pb-0 shrink-0 border-b border-white/10 overflow-x-auto scrollbar-hide">
             {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-all -mb-px ${
+                className={`px-3 sm:px-4 py-2.5 text-xs font-semibold border-b-2 transition-all -mb-px whitespace-nowrap flex-shrink-0 ${
                   tab === t.id
                     ? 'border-primary text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -356,6 +361,13 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
               </motion.div>
             </AnimatePresence>
           </div>
+
+          {/* Error banner */}
+          {saveError && (
+            <div className="mx-6 mb-2 px-3 py-2 bg-destructive/15 border border-destructive/30 rounded-lg text-xs text-destructive font-medium">
+              {saveError}
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex items-center gap-3 px-6 py-4 border-t border-white/10 shrink-0">
