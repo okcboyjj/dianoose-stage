@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, Music, ExternalLink, Play, Plus, Check, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { spotifySearch } from "@/functions/spotifySearch";
 
 function msToMin(ms) {
   if (!ms) return "";
@@ -29,8 +28,8 @@ export default function SpotifySearchModal({ church, onClose, onImported }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await spotifySearch({ query: val });
-        setResults(res.data?.results || []);
+        const res = await base44.functions.invoke("spotifySearch", { query: val });
+        setResults(res?.results || []);
       } catch (e) {
         setError("Search failed. Check your Spotify credentials.");
       } finally {
