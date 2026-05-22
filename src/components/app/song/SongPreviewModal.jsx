@@ -259,8 +259,12 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
     });
   };
 
+  const hasChart = !!song?.chart_content?.trim();
+  const hasLyrics = !!song?.lyrics?.trim();
+  const isSpotifyImport = !!song?.spotify_url;
+
   const TABS = [
-    { id: 'chart', label: '📄 Chart' },
+    { id: 'chart', label: hasChart ? '📄 Chart' : hasLyrics ? '🎵 Lyrics' : '📄 Chart' },
     { id: 'chords', label: '🎸 Chords' },
     { id: 'patches', label: '🎛 Patches' },
     { id: 'prod', label: '🎬 Prod' },
@@ -363,50 +367,115 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                 {/* ── CHART TAB ── */}
                 {tab === 'chart' && (
                   <div className="space-y-3">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-3 py-1.5 border border-white/8">
-                        <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">KEY</span>
-                        <span className="text-sm font-bold text-primary font-mono">{currentKey}</span>
-                      </div>
-                      {song?.bpm && (
-                        <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-3 py-1.5 border border-white/8">
-                          <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">BPM</span>
-                          <span className="text-sm font-bold text-foreground font-mono">{song.bpm}</span>
+                    {/* ── Case 1: Chord chart exists ── */}
+                    {hasChart && (
+                      <>
+                        {/* Toolbar */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-3 py-1.5 border border-white/8">
+                            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">KEY</span>
+                            <span className="text-sm font-bold text-primary font-mono">{currentKey}</span>
+                          </div>
+                          {song?.bpm && (
+                            <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-3 py-1.5 border border-white/8">
+                              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">BPM</span>
+                              <span className="text-sm font-bold text-foreground font-mono">{song.bpm}</span>
+                            </div>
+                          )}
+                          {capo > 0 && (
+                            <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
+                              <span className="text-[9px] text-primary font-bold uppercase tracking-wider">CAPO</span>
+                              <span className="text-sm font-bold text-primary font-mono">{capo}</span>
+                            </div>
+                          )}
+                          <div className="flex-1" />
+                          <div className="flex items-center gap-1 bg-white/5 rounded-lg border border-white/8 p-1">
+                            <button onClick={() => setSemitones(s => s - 1)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors font-bold">−</button>
+                            <span className="text-xs text-muted-foreground px-2 font-mono min-w-[28px] text-center">
+                              {semitones === 0 ? 'orig' : `${semitones > 0 ? '+' : ''}${semitones}`}
+                            </span>
+                            <button onClick={() => setSemitones(s => s + 1)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors font-bold">+</button>
+                          </div>
+                          <button onClick={() => setNashville(n => !n)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${nashville ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/8 text-muted-foreground hover:text-foreground'}`}>
+                            NNS
+                          </button>
                         </div>
-                      )}
-                      {capo > 0 && (
-                        <div className="flex items-center gap-1.5 bg-primary/10 rounded-lg px-3 py-1.5 border border-primary/20">
-                          <span className="text-[9px] text-primary font-bold uppercase tracking-wider">CAPO</span>
-                          <span className="text-sm font-bold text-primary font-mono">{capo}</span>
+                        <div className="bg-black/30 border border-white/8 rounded-xl p-4 overflow-y-auto max-h-[50vh]">
+                          <div className="leading-relaxed space-y-0.5">
+                            {renderChart()}
+                          </div>
                         </div>
-                      )}
-                      <div className="flex-1" />
-                      {/* Transpose */}
-                      <div className="flex items-center gap-1 bg-white/5 rounded-lg border border-white/8 p-1">
-                        <button onClick={() => setSemitones(s => s - 1)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors font-bold">−</button>
-                        <span className="text-xs text-muted-foreground px-2 font-mono min-w-[28px] text-center">
-                          {semitones === 0 ? 'orig' : `${semitones > 0 ? '+' : ''}${semitones}`}
-                        </span>
-                        <button onClick={() => setSemitones(s => s + 1)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors font-bold">+</button>
-                      </div>
-                      <button onClick={() => setNashville(n => !n)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${nashville ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/8 text-muted-foreground hover:text-foreground'}`}>
-                        NNS
-                      </button>
-                    </div>
+                        {songChords.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            Tap any chord above to see how to play it
+                          </p>
+                        )}
+                      </>
+                    )}
 
-                    {/* Chart */}
-                    <div className="bg-black/30 border border-white/8 rounded-xl p-4 overflow-y-auto max-h-[50vh]">
-                      <div className="leading-relaxed space-y-0.5">
-                        {renderChart()}
-                      </div>
-                    </div>
+                    {/* ── Case 2: Lyrics only (no chord chart) ── */}
+                    {!hasChart && hasLyrics && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Lyrics Only</span>
+                          <span className="text-[10px] font-semibold text-muted-foreground/60 bg-white/5 border border-white/8 rounded-full px-2 py-0.5">No chord chart</span>
+                          {isSpotifyImport && (
+                            <span className="text-[10px] font-semibold text-green-400/70 bg-green-500/8 border border-green-500/15 rounded-full px-2 py-0.5">Spotify import</span>
+                          )}
+                        </div>
+                        {isSpotifyImport && (
+                          <div className="flex items-center gap-2 bg-white/4 border border-white/8 rounded-xl px-3 py-2">
+                            <span className="text-muted-foreground text-xs">ℹ️</span>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Lyrics were entered manually. Spotify does not provide licensed lyrics via their API.
+                            </p>
+                          </div>
+                        )}
+                        <div className="bg-black/30 border border-white/8 rounded-xl p-5 overflow-y-auto max-h-[52vh]">
+                          <div className="space-y-0 leading-loose">
+                            {song.lyrics.split('\n').map((line, i) => {
+                              if (line.trim() === '') return <div key={i} className="h-3" />;
+                              // Section headers: lines ending with ":" or wrapped in []
+                              const isSectionLabel = /^\[.+\]$/.test(line.trim()) || /^[\w\s]+:$/.test(line.trim());
+                              if (isSectionLabel) return (
+                                <p key={i} className="text-primary font-bold text-sm tracking-wide mt-4 mb-1 first:mt-0">{line}</p>
+                              );
+                              return (
+                                <p key={i} className="text-foreground/90 text-sm leading-relaxed">{line}</p>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/60 text-center">
+                          Add a chord chart in Edit → Chart to enable transpose & chord diagrams
+                        </p>
+                      </>
+                    )}
 
-                    {songChords.length > 0 && (
-                      <p className="text-[10px] text-muted-foreground text-center">
-                        Tap any chord above to see how to play it
-                      </p>
+                    {/* ── Case 3: Neither chart nor lyrics ── */}
+                    {!hasChart && !hasLyrics && (
+                      <div className="flex flex-col items-center justify-center py-14 gap-4 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                          <span className="text-2xl">📄</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground mb-1">No chart or lyrics yet</p>
+                          <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
+                            {isSpotifyImport
+                              ? "Spotify doesn't provide chord charts or lyrics. Add them manually using the Edit button."
+                              : "Add a chord chart or paste lyrics to use this view."}
+                          </p>
+                        </div>
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(song)}
+                            className="text-xs font-bold text-primary bg-primary/10 border border-primary/20 rounded-xl px-4 py-2 hover:bg-primary/20 transition-colors"
+                          >
+                            {isSpotifyImport ? 'Add Chart or Lyrics →' : 'Open Editor →'}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
