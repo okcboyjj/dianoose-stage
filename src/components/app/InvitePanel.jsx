@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
-import { Mail, Link, Copy, Check, UserPlus, Clock, X, Loader2, Send } from "lucide-react";
+import { Mail, Link, Copy, Check, UserPlus, Clock, X, Loader2, Send, Share2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -60,6 +60,29 @@ export default function InvitePanel({ church, user, members, onRefresh }) {
     await navigator.clipboard.writeText(joinUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const shareInvite = async (linkUrl) => {
+    const shareUrl = linkUrl || joinUrl;
+    const shareText = `Hey! ${user?.first_name} ${user?.last_name} is inviting you to join the ${church?.name} worship team on Dianoose Stage. Tap the link to join:`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Join ${church?.name} on Dianoose Stage`, text: shareText, url: shareUrl });
+      } catch (e) {
+        if (e.name !== "AbortError") fallbackShare(shareUrl, shareText);
+      }
+    } else {
+      fallbackShare(shareUrl, shareText);
+    }
+  };
+
+  const fallbackShare = (url, text) => {
+    // Try SMS link first, fallback to clipboard
+    const smsBody = encodeURIComponent(`${text} ${url}`);
+    const smsLink = `sms:?body=${smsBody}`;
+    const a = document.createElement("a");
+    a.href = smsLink;
+    a.click();
   };
 
   const generatePersonalLink = async () => {
@@ -173,6 +196,10 @@ See you on stage!
                   <span className="flex-1 truncate text-left">{joinUrl}</span>
                   {copied ? <Check className="w-4 h-4 text-green-400 shrink-0" /> : <Copy className="w-4 h-4 shrink-0" />}
                 </button>
+                <button onClick={() => shareInvite(joinUrl)} className="flex items-center justify-center gap-2 w-full bg-primary/10 border border-primary/30 rounded-xl px-4 py-3 text-xs font-semibold text-primary hover:bg-primary/20 transition-all">
+                  <Share2 className="w-4 h-4 shrink-0" />
+                  Share Invite (Text / Messages)
+                </button>
               </div>
 
               {/* Role-specific invite link */}
@@ -194,10 +221,17 @@ See you on stage!
                     </select>
                   </div>
                 </div>
-                <Button onClick={generatePersonalLink} className="w-full bg-primary text-primary-foreground h-9 rounded-xl text-xs font-semibold">
-                  <Link className="w-3.5 h-3.5 mr-2" />
-                  {copied ? "Copied!" : "Generate & Copy Link"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={generatePersonalLink} className="flex-1 bg-primary text-primary-foreground h-9 rounded-xl text-xs font-semibold">
+                    <Link className="w-3.5 h-3.5 mr-2" />
+                    {copied ? "Copied!" : "Generate & Copy Link"}
+                  </Button>
+                  {generatedLink && (
+                    <Button onClick={() => shareInvite(generatedLink)} variant="outline" className="h-9 rounded-xl text-xs border-primary/30 text-primary hover:bg-primary/10 px-3">
+                      <Share2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
                 {generatedLink && (
                   <p className="text-[10px] text-muted-foreground bg-secondary/30 rounded-lg p-2 font-mono truncate">{generatedLink}</p>
                 )}

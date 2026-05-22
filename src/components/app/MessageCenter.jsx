@@ -301,7 +301,7 @@ export default function MessageCenter({ church, user, services, members }) {
   const currentUserId = user?.user_id || user?.id;
 
   return (
-    <div className="flex h-full gap-0 rounded-2xl overflow-hidden border border-border/30 bg-card/30" style={{ height: "calc(100vh - 140px)" }}>
+    <div className="flex gap-0 rounded-2xl overflow-hidden border border-border/30 bg-card/30" style={{ height: "calc(100vh - 200px)", minHeight: 420 }}>
 
       {/* Channel sidebar */}
       <div className={`${showChannelList ? "flex" : "hidden sm:flex"} flex-col w-full sm:w-64 border-r border-border/30 bg-background/30 shrink-0`}>

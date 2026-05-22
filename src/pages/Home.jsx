@@ -1239,6 +1239,7 @@ function MainApp({ onLogout }) {
   const [memberSearch, setMemberSearch] = useState("");
   const [serviceFilter, setServiceFilter] = useState("All");
   const [songKeyFilter, setSongKeyFilter] = useState("All");
+  const [songSort, setSongSort] = useState("recent");
   const [songLibTab, setSongLibTab] = useState("church");
 
   const church = globalChurch;
@@ -1339,7 +1340,7 @@ function MainApp({ onLogout }) {
     { id: "mystage", icon: Guitar, label: "My Stage", group: "Personal" },
     { id: "mylibrary", icon: Star, label: "My Library", badge: myLibrary.length, group: "Personal" },
     { id: "musicians", icon: Users, label: "Musicians", group: "Team" },
-    { id: "invite", icon: Users, label: "Invite Team", group: "Team" },
+    { id: "invite", icon: Users, label: "Invite Members", group: "Team" },
     { id: "notifications", icon: Bell, label: "Notifications", badge: notifications.filter(n => !n.is_read).length, group: "Other" },
     { id: "admin", icon: Shield, label: "Admin Panel", group: "Other" },
     { id: "settings", icon: Settings, label: "Settings", group: "Other" }
@@ -1461,12 +1462,27 @@ function MainApp({ onLogout }) {
           </Suspense>
         ) : (
           <>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 flex items-center gap-3 bg-card border border-border/40 rounded-xl px-4 py-2.5 focus-within:border-primary/50 transition-all">
-                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 flex items-center gap-3 bg-card border border-border/40 rounded-xl px-4 py-2.5 focus-within:border-primary/50 transition-all">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input value={songSearch} onChange={e => setSongSearch(e.target.value)} placeholder="Search songs, artists, keys..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1" />
+                </div>
+                <select
+                  value={songSort}
+                  onChange={e => setSongSort(e.target.value)}
+                  className="bg-card border border-border/40 rounded-xl px-3 py-2.5 text-xs text-foreground outline-none hover:border-primary/40 transition-all shrink-0"
+                >
+                  <option value="recent">Recently Added</option>
+                  <option value="title">Title A–Z</option>
+                  <option value="artist">Artist A–Z</option>
+                  <option value="key">Key</option>
+                  <option value="bpm_asc">BPM Low→High</option>
+                  <option value="bpm_desc">BPM High→Low</option>
+                  <option value="favorites">Favorites First</option>
+                </select>
               </div>
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
                 {["All", "★", "G", "A", "B", "C", "D", "E", "F"].map(k => (
                   <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
                 ))}
@@ -1477,6 +1493,14 @@ function MainApp({ onLogout }) {
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
                 return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
+              }).sort((a, b) => {
+                if (songSort === "title") return (a.title || "").localeCompare(b.title || "");
+                if (songSort === "artist") return (a.artist || "").localeCompare(b.artist || "");
+                if (songSort === "key") return (a.key || "").localeCompare(b.key || "");
+                if (songSort === "bpm_asc") return (Number(a.bpm) || 0) - (Number(b.bpm) || 0);
+                if (songSort === "bpm_desc") return (Number(b.bpm) || 0) - (Number(a.bpm) || 0);
+                if (songSort === "favorites") return (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
+                return 0; // "recent" — keep default entity order
               }).map((song) => (
                 <SongCard
                   key={song.id}
@@ -1535,7 +1559,7 @@ function MainApp({ onLogout }) {
     if (activeSection === "notifications") return <AnimatedElement key="notifications"><Suspense fallback={sectionFallback}><NotificationsSection notifications={notifications} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "admin") return <AnimatedElement key="admin"><Suspense fallback={sectionFallback}><AdminSection church={church} members={members} onRefresh={loadData} onChurchUpdate={(updated) => { globalChurch = updated; }} /></Suspense></AnimatedElement>;
     if (activeSection === "messages") return (
-      <AnimatedElement key="messages">
+      <AnimatedElement key="messages" className="h-full">
         <Suspense fallback={sectionFallback}>
           <MessageCenter church={church} user={user} services={services} members={members} />
         </Suspense>
@@ -1572,7 +1596,7 @@ function MainApp({ onLogout }) {
     if (activeSection === "invite") return (
       <AnimatedElement key="invite">
         <div className="space-y-4 pb-12">
-          <h1 className="text-2xl font-bold text-foreground">Invite Team</h1>
+          <h1 className="text-2xl font-bold text-foreground">Invite Members</h1>
           <Suspense fallback={sectionFallback}>
             <InvitePanel church={church} user={user} members={members} onRefresh={loadData} />
           </Suspense>
@@ -1667,7 +1691,7 @@ function MainApp({ onLogout }) {
         </div>
         
         <PullToRefresh onRefresh={() => loadData(activeSection)}>
-          <div className="p-4 sm:p-8 scrollbar-hide main-content-mobile sm:pb-8">
+          <div className={activeSection === "messages" ? "h-full px-4 sm:px-8 pb-2 sm:pb-4 pt-4 sm:pt-8 flex flex-col" : "p-4 sm:p-8 scrollbar-hide main-content-mobile sm:pb-8"}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeSection}
@@ -1675,6 +1699,7 @@ function MainApp({ onLogout }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                className={activeSection === "messages" ? "flex-1 min-h-0" : ""}
               >
                 {renderContent()}
               </motion.div>

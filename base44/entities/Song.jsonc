@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "artist": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "time_signature": {
+      "type": "string"
+    },
+    "capo": {
+      "type": "number"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "chart_content": {
+      "type": "string"
+    },
+    "guitar_patch_notes": {
+      "type": "string"
+    },
+    "keys_patch_notes": {
+      "type": "string"
+    },
+    "production_notes": {
+      "type": "string"
+    },
+    "rehearsal_notes": {
+      "type": "string"
+    },
+    "arrangement_notes": {
+      "type": "string"
+    },
+    "lyrics": {
+      "type": "string",
+      "description": "Song lyrics (manually entered from a licensed source)"
+    },
+    "church_id": {
+      "type": "string"
+    },
+    "global_song_id": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "category": {
+      "type": "string"
+    },
+    "is_favorite": {
+      "type": "boolean"
+    },
+    "artwork_url": {
+      "type": "string"
+    },
+    "spotify_url": {
+      "type": "string"
+    },
+    "file_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "service_count": {
+      "type": "number"
+    },
+    "arrangement_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [],
+  "name": "Song"
+}

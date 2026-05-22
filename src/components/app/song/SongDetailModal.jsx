@@ -16,6 +16,7 @@ const ARRANGEMENT_SECTIONS = ['Intro', 'V1', 'Pre-Ch', 'Chorus', 'V2', 'Bridge',
 const TABS = [
   { id: 'details', label: 'Details', icon: null },
   { id: 'chart', label: 'Chart', icon: '📄' },
+  { id: 'lyrics', label: 'Lyrics', icon: '🎵' },
   { id: 'patches', label: 'Patches', icon: '🎛' },
   { id: 'prod', label: 'Prod', icon: '🎬' },
 ];
@@ -49,6 +50,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
     tags: song?.tags || [],
     artwork_url: song?.artwork_url || '',
     spotify_url: song?.spotify_url || '',
+    lyrics: song?.lyrics || '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -330,6 +332,32 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
                         rows={10}
                         className="bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-y" />
                     </div>
+                  </div>
+                )}
+
+                {tab === 'lyrics' && (
+                  <div className="space-y-3">
+                    <div className="bg-secondary/20 border border-border/30 rounded-xl p-3">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">About Lyrics</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        Paste song lyrics here for easy reference during rehearsal. Spotify does not provide licensed lyrics through their API — use this field to manually add lyrics from a licensed source (e.g. official sheet music, CCLI licensed copy).
+                      </p>
+                    </div>
+                    {form.spotify_url && (
+                      <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2">
+                        <span className="text-green-400 text-xs">🎵</span>
+                        <p className="text-[11px] text-green-400 font-medium flex-1">Spotify metadata imported · Lyrics not included (not available via API)</p>
+                        <a href={form.spotify_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-green-400 underline font-semibold shrink-0">Open ↗</a>
+                      </div>
+                    )}
+                    <Textarea
+                      value={form.lyrics}
+                      onChange={e => set('lyrics', e.target.value)}
+                      placeholder={"Verse 1:\nPaste lyrics here from your licensed source (CCLI, official sheet music, etc.)\n\nChorus:\n..."}
+                      rows={16}
+                      className="bg-background/60 border-white/10 text-sm leading-relaxed resize-y font-mono"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Only use lyrics you have a legal right to reproduce (CCLI license, purchased sheet music, etc.).</p>
                   </div>
                 )}
 
