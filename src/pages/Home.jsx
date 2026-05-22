@@ -162,10 +162,12 @@ const notifyAuthListeners = () => authListeners.forEach(fn => fn());
 
 // ─── Login Screen ─────────────────────────────────────────────────────────────
 function LoginScreen({ onAuth }) {
-  const [tab, setTab] = useState("new"); // "signin" | "join" | "new"
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinCodeFromUrl = urlParams.get("join") || "";
+  const [tab, setTab] = useState(joinCodeFromUrl ? "join" : "new"); // "signin" | "join" | "new"
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState(joinCodeFromUrl);
   const [joinEmail, setJoinEmail] = useState("");
   const [joinPassword, setJoinPassword] = useState("");
   const [loading, setLoading] = useState(false);
