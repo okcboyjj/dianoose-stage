@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { Link, Copy, Check, UserPlus, X, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 const TeamInviteEntity = base44.entities.TeamInvite;
 

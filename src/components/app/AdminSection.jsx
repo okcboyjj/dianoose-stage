@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shield, Users, Copy, Check, RefreshCw, Loader2, Share2, X, Plus, Trash2 } from "lucide-react";
+import { Users, Copy, Check, RefreshCw, Loader2, Share2, X, Plus, Trash2 } from "lucide-react";
 
 const ChurchEntity = base44.entities.Church;
 const ChurchMemberEntity = base44.entities.ChurchMember;

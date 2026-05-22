@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Maximize2, Minimize2, Type } from "lucide-react";
-import { transposeFullChart, chartToNashville, ALL_KEYS, semitonesBetween, suggestCapo } from "./ChordTransposer";
+import { transposeFullChart, chartToNashville, ALL_KEYS, suggestCapo } from "./ChordTransposer";
 import ChordDiagramPopup from "./ChordDiagram";
 
 const CHORD_REGEX = /\b([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11)?(?:\/[A-G][b#]?)?)\b/g;

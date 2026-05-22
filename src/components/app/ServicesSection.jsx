@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, Loader2, Music, List, Users, Save, Trash2, Calendar } from "lucide-react";
+import { Plus, X, Loader2, Music, List, Save, Trash2, Calendar } from "lucide-react";
 import MobileSelect from "@/components/ui/MobileSelect";
 import ServiceRosterPanel from "./service/ServiceRosterPanel";
 import ServiceAssignmentPanel from "./service/ServiceAssignmentPanel";

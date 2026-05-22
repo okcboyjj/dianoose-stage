@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { Music, List, Users, Star, Check, X, HelpCircle, Bell, Clock, ChevronRight, Calendar, ArrowRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";

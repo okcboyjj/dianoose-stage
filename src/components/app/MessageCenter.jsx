@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { base44 } from "@/api/base44Client";
 import { Plus, Send, Users, ChevronRight, Loader2, Pin, Megaphone, Reply, X, FileText, Music, List, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
