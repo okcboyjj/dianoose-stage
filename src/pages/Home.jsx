@@ -1369,7 +1369,7 @@ function MainApp({ onLogout }) {
   const Sidebar = ({ mobile = false }) => (
     <div className={`flex flex-col h-full ${mobile ? "w-full" : "w-64"} bg-card border-r border-border/30 shadow-2xl z-20 relative`}>
       <div className="p-5 border-b border-border/30 flex items-center gap-4 bg-background/20">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0 overflow-hidden">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 shrink-0 overflow-hidden ${church?.logo_url ? "bg-secondary/30 border border-border/30" : "bg-primary"}`}>
           {church?.logo_url ? (
             <img src={church.logo_url} alt="Church logo" className="w-full h-full object-contain p-1" />
           ) : (
@@ -1633,7 +1633,7 @@ function MainApp({ onLogout }) {
               </button>
             ) : (
               <div className="w-11 h-11 flex items-center justify-center pl-2">
-                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20 overflow-hidden">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shadow-md shadow-primary/20 overflow-hidden ${church?.logo_url ? "bg-secondary/30 border border-border/30" : "bg-primary"}`}>
                   {church?.logo_url ? (
                     <img src={church.logo_url} alt="logo" className="w-full h-full object-contain p-0.5" />
                   ) : (

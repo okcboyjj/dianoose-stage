@@ -4,7 +4,7 @@ import { applyChurchTheme } from "@/lib/applyTheme.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Loader2, Check, Trash2, AlertTriangle, Upload, Palette, Image } from "lucide-react";
+import { Save, Loader2, Check, Trash2, AlertTriangle, Upload, Palette, Image, Music, AlertCircle } from "lucide-react";
 import MobileSelect from "@/components/ui/MobileSelect";
 
 const ChurchEntity = base44.entities.Church;
@@ -45,6 +45,7 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeSaved, setThemeSaved] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
   const logoRef = useRef(null);
 
   // Profile
@@ -108,10 +109,25 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLogoError("");
     setLogoUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setT("logo_url", file_url);
-    setLogoUploading(false);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setThemeForm(f => ({ ...f, logo_url: file_url }));
+      // Immediately propagate so sidebar/header update without saving
+      onChurchUpdate({ ...church, ...themeForm, logo_url: file_url });
+    } catch {
+      setLogoError("Upload failed. Please try again or check your connection.");
+    } finally {
+      setLogoUploading(false);
+      if (logoRef.current) logoRef.current.value = "";
+    }
+  };
+
+  const handleLogoRemove = () => {
+    setThemeForm(f => ({ ...f, logo_url: "" }));
+    onChurchUpdate({ ...church, ...themeForm, logo_url: "" });
+    setLogoError("");
   };
 
   const saveProfile = async () => {
@@ -233,32 +249,55 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
               </div>
               <SaveBar saving={themeSaving} saved={themeSaved} />
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-border/60 flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
-                {themeForm.logo_url ? (
-                  <img src={themeForm.logo_url} alt="Church logo" className="w-full h-full object-contain p-1" />
-                ) : (
-                  <Image className="w-7 h-7 text-muted-foreground/40" />
-                )}
-              </div>
-              <div className="flex-1 space-y-3">
-                <p className="text-xs text-muted-foreground leading-relaxed">Upload a PNG with transparent background for best results. Displayed in the sidebar and on exported setlists.</p>
-                <div className="flex gap-2">
+
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* Upload controls */}
+              <div className="flex-1 space-y-4">
+                <p className="text-xs text-muted-foreground leading-relaxed">Upload a PNG with a transparent background for best results. Your logo appears in the sidebar, mobile header, and login screen.</p>
+                <div className="flex gap-2 flex-wrap">
                   <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                   <Button onClick={() => logoRef.current?.click()} disabled={logoUploading} variant="outline" className="border-border/50 text-foreground h-9 px-4 rounded-lg text-xs font-semibold">
-                    {logoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <Upload className="w-3.5 h-3.5 mr-2" />}
-                    Upload Logo
+                    {logoUploading ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />Uploading...</> : <><Upload className="w-3.5 h-3.5 mr-2" />Upload Logo</>}
                   </Button>
                   {themeForm.logo_url && (
-                    <Button onClick={() => setT("logo_url", "")} variant="outline" className="border-destructive/30 text-destructive h-9 px-3 rounded-lg text-xs">Remove</Button>
+                    <Button onClick={handleLogoRemove} variant="outline" className="border-destructive/30 text-destructive h-9 px-3 rounded-lg text-xs font-semibold">Remove</Button>
                   )}
                 </div>
-                {themeForm.logo_url && (
-                  <div>
-                    <Label className="text-xs font-medium text-muted-foreground ml-1">Logo URL</Label>
-                    <Input value={themeForm.logo_url} onChange={e => setT("logo_url", e.target.value)} className="mt-1 bg-background/50 border-border/50 text-foreground text-xs" />
+                {logoError && (
+                  <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-destructive shrink-0" />
+                    <p className="text-xs text-destructive">{logoError}</p>
                   </div>
                 )}
+              </div>
+
+              {/* Sidebar preview */}
+              <div className="shrink-0">
+                <p className="text-xs text-muted-foreground font-medium mb-2">Sidebar preview</p>
+                <div className="bg-card border border-border/40 rounded-xl p-3 flex items-center gap-3 w-56">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: themeForm.accent_color + "33" }}>
+                    {themeForm.logo_url ? (
+                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <Music className="w-4 h-4" style={{ color: themeForm.accent_color }} />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-foreground truncate">Dianoose Stage</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{church?.name || "Your Church"}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground font-medium mt-3 mb-2">Mobile header</p>
+                <div className="bg-card border border-border/40 rounded-xl px-3 py-2.5 flex items-center gap-2 w-56">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: themeForm.accent_color + "33" }}>
+                    {themeForm.logo_url ? (
+                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-contain p-0.5" />
+                    ) : (
+                      <Music className="w-3.5 h-3.5" style={{ color: themeForm.accent_color }} />
+                    )}
+                  </div>
+                  <span className="text-xs font-bold text-foreground">Dianoose Stage</span>
+                </div>
               </div>
             </div>
           </div>
