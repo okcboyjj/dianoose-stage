@@ -1103,6 +1103,7 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
   const sections = song.arrangement_sections || [];
   const displayKey = preferredKey || song.key;
   const extraSections = sections.length > 3 ? sections.length - 3 : 0;
+  const artwork = song.artwork_url;
 
   return (
     <div
@@ -1112,12 +1113,24 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
       {/* Subtle top glow line */}
       <div className="top-glow absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0" />
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
+      {/* Header — artwork + title/artist + key/fav */}
+      <div className="flex items-center gap-3">
+        {/* Album artwork */}
+        <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-white/5 border border-white/8 flex items-center justify-center">
+          {artwork ? (
+            <img src={artwork} alt={song.title} className="w-full h-full object-cover" />
+          ) : (
+            <Music className="w-5 h-5 text-muted-foreground opacity-40" />
+          )}
+        </div>
+
+        {/* Title + artist */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors">{song.title}</p>
           <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
         </div>
+
+        {/* Key badge + favorite */}
         <div className="flex items-center gap-1.5 shrink-0">
           {displayKey && (
             <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
