@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "instrument": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "church_id": {
+      "type": "string"
+    },
+    "avatar_color": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "user_id": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "ChurchMember"
+}

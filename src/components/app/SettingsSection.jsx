@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, Save, Loader2, Check, Trash2, AlertTriangle } from "lucide-react";
+import { Save, Loader2, Check, Trash2, AlertTriangle, Upload, Palette, Image } from "lucide-react";
 import MobileSelect from "@/components/ui/MobileSelect";
 
 const ChurchEntity = base44.entities.Church;
 const ChurchMemberEntity = base44.entities.ChurchMember;
 
 const AVATAR_COLORS = ["#6C63FF", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#8B5CF6", "#14B8A6"];
+
+const PRESET_THEMES = [
+  { id: "default",  label: "Indigo Night",  primary: "#7C6FFF", glow: "#6C63FF" },
+  { id: "emerald",  label: "Emerald",        primary: "#10B981", glow: "#059669" },
+  { id: "rose",     label: "Rose",           primary: "#F43F5E", glow: "#E11D48" },
+  { id: "amber",    label: "Amber",          primary: "#F59E0B", glow: "#D97706" },
+  { id: "sky",      label: "Sky Blue",       primary: "#0EA5E9", glow: "#0284C7" },
+  { id: "violet",   label: "Violet",         primary: "#8B5CF6", glow: "#7C3AED" },
+];
 
 function SaveBar({ saving, saved }) {
   if (saving) return <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...</div>;
@@ -30,6 +39,13 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
+  // Theme / branding
+  const [themeForm, setThemeForm] = useState({ accent_color: church?.accent_color || "#6C63FF", glow_color: church?.glow_color || "#6C63FF", logo_url: church?.logo_url || "" });
+  const [themeSaving, setThemeSaving] = useState(false);
+  const [themeSaved, setThemeSaved] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoRef = useRef(null);
+
   // Profile
   const [profileForm, setProfileForm] = useState({ first_name: user?.first_name || "", last_name: user?.last_name || "", instrument: user?.instrument || "", avatar_color: user?.avatar_color || AVATAR_COLORS[0] });
   const [profileSaving, setProfileSaving] = useState(false);
@@ -49,10 +65,11 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const setC = (k, v) => setChurchForm(f => ({ ...f, [k]: v }));
   const setSc = (k, v) => setSchedForm(f => ({ ...f, [k]: v }));
   const setP = (k, v) => setProfileForm(f => ({ ...f, [k]: v }));
+  const setT = (k, v) => setThemeForm(f => ({ ...f, [k]: v }));
 
   const saveChurch = async () => {
     setChurchSaving(true);
-    const updated = await ChurchEntity.update(church.id, churchForm);
+    await ChurchEntity.update(church.id, churchForm);
     setChurchSaving(false); setChurchSaved(true);
     onChurchUpdate({ ...church, ...churchForm });
     setTimeout(() => setChurchSaved(false), 2500);
@@ -64,6 +81,27 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
     setSchedSaving(false); setSchedSaved(true);
     onChurchUpdate({ ...church, ...schedForm });
     setTimeout(() => setSchedSaved(false), 2500);
+  };
+
+  const saveTheme = async () => {
+    setThemeSaving(true);
+    await ChurchEntity.update(church.id, themeForm);
+    setThemeSaving(false); setThemeSaved(true);
+    onChurchUpdate({ ...church, ...themeForm });
+    setTimeout(() => setThemeSaved(false), 2500);
+  };
+
+  const applyPreset = (preset) => {
+    setThemeForm(f => ({ ...f, accent_color: preset.primary, glow_color: preset.glow }));
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setT("logo_url", file_url);
+    setLogoUploading(false);
   };
 
   const saveProfile = async () => {
@@ -102,6 +140,7 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
   const tabs = [
     { id: "church", label: "⛪ Church" },
     { id: "schedule", label: "📅 Schedule" },
+    { id: "branding", label: "🎨 Branding" },
     { id: "profile", label: "👤 Profile" },
   ];
 
@@ -173,6 +212,119 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
         </div>
       )}
 
+      {tab === "branding" && (
+        <div className="space-y-6">
+          {/* Logo Upload */}
+          <div className="glass-panel rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Image className="w-4 h-4 text-primary" />
+                <h2 className="text-base font-bold text-foreground">Church Logo</h2>
+              </div>
+              <SaveBar saving={themeSaving} saved={themeSaved} />
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-border/60 flex items-center justify-center bg-secondary/30 overflow-hidden shrink-0">
+                {themeForm.logo_url ? (
+                  <img src={themeForm.logo_url} alt="Church logo" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <Image className="w-7 h-7 text-muted-foreground/40" />
+                )}
+              </div>
+              <div className="flex-1 space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">Upload a PNG with transparent background for best results. Displayed in the sidebar and on exported setlists.</p>
+                <div className="flex gap-2">
+                  <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  <Button onClick={() => logoRef.current?.click()} disabled={logoUploading} variant="outline" className="border-border/50 text-foreground h-9 px-4 rounded-lg text-xs font-semibold">
+                    {logoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" /> : <Upload className="w-3.5 h-3.5 mr-2" />}
+                    Upload Logo
+                  </Button>
+                  {themeForm.logo_url && (
+                    <Button onClick={() => setT("logo_url", "")} variant="outline" className="border-destructive/30 text-destructive h-9 px-3 rounded-lg text-xs">Remove</Button>
+                  )}
+                </div>
+                {themeForm.logo_url && (
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground ml-1">Logo URL</Label>
+                    <Input value={themeForm.logo_url} onChange={e => setT("logo_url", e.target.value)} className="mt-1 bg-background/50 border-border/50 text-foreground text-xs" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Theme Colors */}
+          <div className="glass-panel rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Palette className="w-4 h-4 text-primary" />
+              <h2 className="text-base font-bold text-foreground">Theme Colors</h2>
+            </div>
+
+            <p className="text-xs text-muted-foreground mb-4 font-medium">Quick Presets</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-6">
+              {PRESET_THEMES.map(preset => (
+                <button
+                  key={preset.id}
+                  onClick={() => applyPreset(preset)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all hover:scale-105 ${themeForm.accent_color === preset.primary ? "border-foreground/50 bg-secondary/50" : "border-border/30 hover:border-border/60"}`}
+                >
+                  <div className="w-8 h-8 rounded-full shadow-lg" style={{ backgroundColor: preset.primary, boxShadow: `0 0 12px ${preset.glow}60` }} />
+                  <span className="text-[10px] font-semibold text-muted-foreground">{preset.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-secondary/30 rounded-xl p-4 border border-border/30">
+                <Label className="text-xs font-bold text-foreground block mb-3">Accent Color</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-border cursor-pointer hover:scale-105 transition-transform shrink-0">
+                    <input type="color" value={themeForm.accent_color} onChange={e => setT("accent_color", e.target.value)} className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Primary</p>
+                    <p className="text-[11px] text-muted-foreground font-mono uppercase">{themeForm.accent_color}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-secondary/30 rounded-xl p-4 border border-border/30">
+                <Label className="text-xs font-bold text-foreground block mb-3">Glow Color</Label>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-border cursor-pointer hover:scale-105 transition-transform shrink-0">
+                    <input type="color" value={themeForm.glow_color} onChange={e => setT("glow_color", e.target.value)} className="absolute inset-[-10px] w-[200%] h-[200%] cursor-pointer" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Glow</p>
+                    <p className="text-[11px] text-muted-foreground font-mono uppercase">{themeForm.glow_color}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview */}
+            <div className="mt-4 p-4 rounded-xl border border-border/30 bg-background/40">
+              <p className="text-xs text-muted-foreground mb-3 font-medium">Preview</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: themeForm.accent_color + "20", boxShadow: `0 0 16px ${themeForm.glow_color}40` }}>
+                  <div className="w-5 h-5 rounded-md" style={{ backgroundColor: themeForm.accent_color }} />
+                </div>
+                <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: themeForm.accent_color + "30" }}>
+                  <div className="h-full w-2/3 rounded-full" style={{ backgroundColor: themeForm.accent_color }} />
+                </div>
+                <div className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{ backgroundColor: themeForm.accent_color }}>
+                  Button
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={saveTheme} disabled={themeSaving} className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold px-6">
+              {themeSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-2" />Save Branding</>}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {tab === "profile" && (
         <div className="space-y-6">
           <div className="glass-panel rounded-2xl p-6">
@@ -202,7 +354,6 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
             </Button>
           </div>
 
-          {/* Delete Account */}
           <div className="glass-panel rounded-2xl p-6 border-destructive/20">
             <h2 className="text-base font-bold text-destructive mb-2 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Danger Zone</h2>
             <p className="text-xs text-muted-foreground mb-4">Removing your account will delete your member profile. This cannot be undone.</p>
@@ -214,14 +365,9 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
               <div className="space-y-3">
                 <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3">
                   <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                  <p className="text-xs text-destructive font-medium">Type <span className="font-bold">DELETE</span> below to confirm account removal.</p>
+                  <p className="text-xs text-destructive font-medium">Type <span className="font-bold">DELETE</span> below to confirm.</p>
                 </div>
-                <Input
-                  value={deleteConfirmText}
-                  onChange={e => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE to confirm"
-                  className="bg-background/50 border-destructive/40 text-foreground text-sm"
-                />
+                <Input value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="Type DELETE to confirm" className="bg-background/50 border-destructive/40 text-foreground text-sm" />
                 <div className="flex gap-2">
                   <Button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(""); }} variant="outline" className="flex-1 border-border/50 h-9 rounded-xl text-xs">Cancel</Button>
                   <Button onClick={deleteAccount} disabled={deleteConfirmText !== "DELETE" || deleting} className="flex-1 bg-destructive text-destructive-foreground hover:bg-destructive/90 h-9 rounded-xl text-xs font-bold">

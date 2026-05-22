@@ -1,0 +1,80 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "church_id": {
+      "type": "string"
+    },
+    "songs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "musicians": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "role_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "song_suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "song_id": {
+            "type": "string"
+          },
+          "suggested_by": {
+            "type": "string"
+          },
+          "suggested_by_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [],
+  "name": "Service"
+}

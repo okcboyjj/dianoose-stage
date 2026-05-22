@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "service_id": {
+      "type": "string"
+    },
+    "member_id": {
+      "type": "string"
+    },
+    "member_name": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "church_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "maybe"
+      ]
+    },
+    "role_in_service": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "ServiceAssignment"
+}

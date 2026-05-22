@@ -9,7 +9,8 @@ import MobileSelect from "@/components/ui/MobileSelect";
 
 const ChurchMemberEntity = base44.entities.ChurchMember;
 
-const ROLES = ["Musician", "Worship Leader", "Production", "Admin"];
+const APP_ROLES = ["Musician", "Worship Leader", "Production", "Admin"];
+const INSTRUMENT_ROLES = ["Worship Leader","Male Vocal","Female Vocal","Piano","Keys","Electric Guitar","Acoustic Guitar","Bass","Drums","MD","Production","Media","Lighting","Camera"];
 const AVATAR_COLORS = ["#6C63FF", "#10B981", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#8B5CF6", "#14B8A6"];
 
 function MemberModal({ member, churchId, onClose, onSave }) {
@@ -20,6 +21,7 @@ function MemberModal({ member, churchId, onClose, onSave }) {
     email: member?.email || "",
     instrument: member?.instrument || "",
     role: member?.role || "Musician",
+    roles: member?.roles || [],
     avatar_color: member?.avatar_color || AVATAR_COLORS[0],
     is_active: member?.is_active !== false,
     password: ""
@@ -58,6 +60,7 @@ function MemberModal({ member, churchId, onClose, onSave }) {
           email: form.email.trim(),
           instrument: form.instrument.trim(),
           role: form.role,
+          roles: form.roles,
           avatar_color: form.avatar_color,
           is_active: form.is_active
         });
@@ -109,7 +112,30 @@ function MemberModal({ member, churchId, onClose, onSave }) {
           <div>
             <Label className="text-xs font-medium text-muted-foreground ml-1">App Role</Label>
             <div className="mt-1.5">
-              <MobileSelect value={form.role} onChange={v => set("role", v)} options={ROLES} />
+              <MobileSelect value={form.role} onChange={v => set("role", v)} options={APP_ROLES} />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground ml-1 block mb-2">Instrument Roles (select all that apply)</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {INSTRUMENT_ROLES.map(r => {
+                const active = (form.roles || []).includes(r);
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => {
+                      const next = active
+                        ? (form.roles || []).filter(x => x !== r)
+                        : [...(form.roles || []), r];
+                      set("roles", next);
+                    }}
+                    className={`text-[11px] font-semibold rounded-full px-2.5 py-1 border transition-all ${active ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/40 text-muted-foreground border-border/40 hover:border-primary/40 hover:text-foreground"}`}
+                  >
+                    {r}
+                  </button>
+                );
+              })}
             </div>
           </div>
           {isNew && (
@@ -145,13 +171,18 @@ function MemberModal({ member, churchId, onClose, onSave }) {
 
 export default function MusicianSection({ members, isAdmin, onRefresh }) {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const churchId = members[0]?.church_id;
 
-  const filtered = members.filter(m =>
-    !search || `${m.first_name} ${m.last_name} ${m.instrument} ${m.role}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const allRoles = ["All", ...INSTRUMENT_ROLES.filter(r => members.some(m => (m.roles || []).includes(r)))];
+
+  const filtered = members.filter(m => {
+    const matchesSearch = !search || `${m.first_name} ${m.last_name} ${m.instrument} ${m.role}`.toLowerCase().includes(search.toLowerCase());
+    const matchesRole = roleFilter === "All" || (m.roles || []).includes(roleFilter);
+    return matchesSearch && matchesRole;
+  });
 
   const roleColor = (role) => {
     if (role === "Admin") return "bg-primary/10 text-primary border-primary/20";
@@ -178,6 +209,14 @@ export default function MusicianSection({ members, isAdmin, onRefresh }) {
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search team members..." className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none flex-1 font-medium" />
       </div>
 
+      {allRoles.length > 1 && (
+        <div className="flex gap-1.5 flex-wrap">
+          {allRoles.map(r => (
+            <button key={r} onClick={() => setRoleFilter(r)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${roleFilter === r ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/50 text-muted-foreground hover:text-foreground"}`}>{r}</button>
+          ))}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-4"><Users className="w-7 h-7 text-muted-foreground" /></div>
@@ -196,7 +235,11 @@ export default function MusicianSection({ members, isAdmin, onRefresh }) {
                   <p className="text-base font-semibold text-foreground truncate">{member.first_name} {member.last_name}</p>
                   <p className="text-xs text-muted-foreground font-medium mt-0.5 truncate">{member.instrument || "—"}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                  {(member.roles || []).slice(0, 2).map(r => (
+                    <span key={r} className="text-[10px] font-semibold bg-secondary/60 text-muted-foreground border border-border/40 rounded-full px-2 py-0.5">{r}</span>
+                  ))}
+                  {(member.roles || []).length > 2 && <span className="text-[10px] text-muted-foreground">+{(member.roles || []).length - 2}</span>}
                   <span className={`text-[11px] font-bold rounded-full px-3 py-1 border uppercase tracking-wider ${roleColor(member.role)}`}>{member.role}</span>
                   {member.role === "Admin" && <Shield className="w-3.5 h-3.5 text-primary" />}
                 </div>

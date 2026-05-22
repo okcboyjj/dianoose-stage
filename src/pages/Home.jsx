@@ -1296,7 +1296,7 @@ function MainApp({ onLogout }) {
       setSongs(s); setServices(svc);
 
       // Fetch heavier per-section data lazily
-      if (["dashboard","musicians","mystage","admin"].includes(section)) {
+      if (["dashboard","musicians","mystage","admin","services"].includes(section)) {
         const m = await ChurchMemberEntity.filter({ church_id: church.id });
         setMembers(m);
       }
@@ -1346,8 +1346,12 @@ function MainApp({ onLogout }) {
   const Sidebar = ({ mobile = false }) => (
     <div className={`flex flex-col h-full ${mobile ? "w-full" : "w-64"} bg-card border-r border-border/30 shadow-2xl z-20 relative`}>
       <div className="p-5 border-b border-border/30 flex items-center gap-4 bg-background/20">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
-          <Music className="w-5 h-5 text-primary-foreground" />
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0 overflow-hidden">
+          {church?.logo_url ? (
+            <img src={church.logo_url} alt="Church logo" className="w-full h-full object-contain p-1" />
+          ) : (
+            <Music className="w-5 h-5 text-primary-foreground" />
+          )}
         </div>
         <div className="overflow-hidden">
           <h2 className="text-sm font-bold text-foreground truncate">Dianoose Stage</h2>
@@ -1403,13 +1407,13 @@ function MainApp({ onLogout }) {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: "Total Songs", value: songs.length, icon: Music, color: "text-primary", bg: "bg-primary/10" },
-            { label: "Services", value: services.length, icon: List, color: "text-accent", bg: "bg-accent/10" },
-            { label: "Team Members", value: members.length, icon: Users, color: "text-primary", bg: "bg-primary/10" },
-            { label: "My Library", value: myLibrary.length, icon: Star, color: "text-accent", bg: "bg-accent/10" }
+            { label: "Total Songs", value: songs.length, icon: Music, color: "text-primary", bg: "bg-primary/10", nav: "songs" },
+            { label: "Services", value: services.length, icon: List, color: "text-accent", bg: "bg-accent/10", nav: "services" },
+            { label: "Team Members", value: members.length, icon: Users, color: "text-primary", bg: "bg-primary/10", nav: "musicians" },
+            { label: "My Library", value: myLibrary.length, icon: Star, color: "text-accent", bg: "bg-accent/10", nav: "mylibrary" }
           ].map((stat, i) => (
             <AnimatedElement key={i} delay={i * 80 + 200}>
-              <div className="glass-panel rounded-2xl p-5 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group">
+              <div onClick={() => navigateTo(stat.nav)} className="glass-panel rounded-2xl p-5 hover:border-primary/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group cursor-pointer">
                 <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
@@ -1497,7 +1501,7 @@ function MainApp({ onLogout }) {
       </div>
     );
 
-    if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} onRefresh={loadData} /></Suspense></AnimatedElement>;
+    if (activeSection === "services") return <AnimatedElement key="services"><Suspense fallback={sectionFallback}><ServicesSection church={church} songs={songs} services={services} members={members} currentUser={user} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "mylibrary") return <AnimatedElement key="mylibrary"><Suspense fallback={sectionFallback}><MyLibrarySection songs={songs} myLibrary={myLibrary} user={user} church={church} onRefresh={loadData} onPreviewSong={(s, tab) => { setPreviewSong(s); setPreviewTab(tab || 'chart'); }} /></Suspense></AnimatedElement>;
     if (activeSection === "mystage") return <AnimatedElement key="mystage"><Suspense fallback={sectionFallback}><MyStageSection user={user} church={church} services={services} songs={songs} members={members} onRefresh={loadData} /></Suspense></AnimatedElement>;
     if (activeSection === "musicians") return <AnimatedElement key="musicians"><Suspense fallback={sectionFallback}><MusicianSection members={members} isAdmin={isAdmin} onRefresh={loadData} /></Suspense></AnimatedElement>;
@@ -1564,8 +1568,12 @@ function MainApp({ onLogout }) {
               </button>
             ) : (
               <div className="w-11 h-11 flex items-center justify-center pl-2">
-                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-                  <Music className="w-3.5 h-3.5 text-primary-foreground" />
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/20 overflow-hidden">
+                  {church?.logo_url ? (
+                    <img src={church.logo_url} alt="logo" className="w-full h-full object-contain p-0.5" />
+                  ) : (
+                    <Music className="w-3.5 h-3.5 text-primary-foreground" />
+                  )}
                 </div>
               </div>
             )}

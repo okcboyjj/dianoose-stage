@@ -1,0 +1,55 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "denomination": {
+      "type": "string"
+    },
+    "service_day": {
+      "type": "string"
+    },
+    "service_time": {
+      "type": "string"
+    },
+    "service_name": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "accent_color": {
+      "type": "string"
+    },
+    "app_icon": {
+      "type": "string"
+    },
+    "team_code": {
+      "type": "string"
+    },
+    "admin_user_id": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "glow_color": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "Church"
+}
