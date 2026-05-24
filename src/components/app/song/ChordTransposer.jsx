@@ -31,12 +31,13 @@ export function transposeNote(note, semitones, targetKey, forceFlats) {
   const [, root, quality] = match;
   const idx = noteToIndex(root);
   if (idx === -1) return note;
-  const newIdx = (idx + semitones + 12) % 12;
+  const newIdx = ((idx + semitones) % 12 + 12) % 12;
   return indexToNote(newIdx, preferFlats) + quality;
 }
 
 export function transposeChord(chord, semitones, targetKey, forceFlats) {
-  if (!chord || semitones === 0) return chord;
+  const needsFlatPass = semitones === 0 && (forceFlats || flatKeys.includes(targetKey));
+  if (!chord || (semitones === 0 && !needsFlatPass)) return chord;
   // Handle slash chords: C/G
   if (chord.includes('/')) {
     const [top, bass] = chord.split('/');
@@ -47,7 +48,8 @@ export function transposeChord(chord, semitones, targetKey, forceFlats) {
 
 // Parse a chord line and transpose all chords
 export function transposeChordLine(line, semitones, targetKey, forceFlats) {
-  if (semitones === 0) return line;
+  const needsFlatPass = semitones === 0 && (forceFlats || flatKeys.includes(targetKey));
+  if (semitones === 0 && !needsFlatPass) return line;
   // Match chord tokens (letters followed by chord qualifiers)
   return line.replace(/\b([A-G][b#]?(?:maj7|maj|min|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?)\b/g, (match) => {
     return transposeChord(match, semitones, targetKey, forceFlats);
@@ -55,7 +57,10 @@ export function transposeChordLine(line, semitones, targetKey, forceFlats) {
 }
 
 export function transposeFullChart(chartContent, semitones, targetKey, forceFlats) {
-  if (!chartContent || semitones === 0) return chartContent;
+  if (!chartContent) return chartContent;
+  // If no transposition but flats are forced or key is a flat key, still run a flat-substitution pass
+  const needsFlatPass = semitones === 0 && (forceFlats || flatKeys.includes(targetKey));
+  if (semitones === 0 && !needsFlatPass) return chartContent;
   return chartContent.split('\n').map(line => {
     // Only transpose lines that look like chord lines (not section headers, not lyrics)
     const trimmed = line.trim();
