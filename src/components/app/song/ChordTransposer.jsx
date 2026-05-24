@@ -24,7 +24,9 @@ function indexToNote(idx, preferFlats = false) {
 const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
 
 export function transposeNote(note, semitones, targetKey, forceFlats) {
-  const preferFlats = forceFlats !== undefined ? forceFlats : flatKeys.includes(targetKey);
+  // For natural flat keys (F, Bb, Eb, etc.), always prefer flats regardless of the toggle
+  const isNaturalFlatKey = flatKeys.includes(targetKey);
+  const preferFlats = isNaturalFlatKey ? true : (forceFlats !== undefined ? forceFlats : false);
   // parse root + quality
   const match = note.match(/^([A-G][b#]?)(.*)/);
   if (!match) return note;
