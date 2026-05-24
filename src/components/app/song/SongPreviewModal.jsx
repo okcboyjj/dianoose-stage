@@ -200,19 +200,19 @@ function ChordLine({ line, onChordClick }) {
   }
   if (lastIdx < line.length) parts.push({ type: 'text', value: line.slice(lastIdx) });
   return (
-    <span>
+    <span style={{ whiteSpace: 'pre', fontFamily: 'inherit' }}>
       {parts.map((p, i) =>
         p.type === 'chord' ? (
           <span
             key={i}
             onClick={() => onChordClick(p.value)}
             className="text-primary font-bold hover:bg-primary/20 rounded transition-colors cursor-pointer hover:underline underline-offset-2"
-            style={{ display: 'inline', minWidth: 0, minHeight: 0, padding: 0, margin: 0, lineHeight: 'inherit', font: 'inherit' }}
+            style={{ display: 'inline', minWidth: 0, minHeight: 0, padding: 0, margin: 0, lineHeight: 'inherit', fontFamily: 'inherit', fontSize: 'inherit', whiteSpace: 'pre' }}
           >
             {p.value}
           </span>
         ) : (
-          <span key={i}>{p.value}</span>
+          <span key={i} style={{ whiteSpace: 'pre', fontFamily: 'inherit' }}>{p.value}</span>
         )
       )}
     </span>
@@ -264,11 +264,11 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
       );
       if (line.trim() === '') return <div key={i} className="h-1.5" />;
       if (isChordLine(line)) return (
-        <p key={i} className="text-foreground leading-relaxed whitespace-pre" style={{ fontSize }}>
+        <div key={i} style={{ fontSize, fontFamily: 'monospace', whiteSpace: 'pre', lineHeight: '1.6' }} className="text-foreground">
           <ChordLine line={line} onChordClick={setActiveChord} />
-        </p>
+        </div>
       );
-      return <p key={i} className="text-muted-foreground leading-relaxed whitespace-pre" style={{ fontSize }}>{line}</p>;
+      return <div key={i} style={{ fontSize, fontFamily: 'monospace', whiteSpace: 'pre', lineHeight: '1.6' }} className="text-muted-foreground">{line}</div>;
     });
   };
 
@@ -419,7 +419,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                           </button>
                         </div>
                         <div className="bg-black/30 border border-white/8 rounded-xl p-4 overflow-y-auto max-h-[50vh]">
-                          <div className="leading-relaxed space-y-0.5">
+                          <div style={{ fontFamily: 'monospace' }}>
                             {renderChart()}
                           </div>
                         </div>
