@@ -17,7 +17,10 @@ function isChordLine(line) {
 }
 
 function isSectionHeader(line) {
-  return line.trim().startsWith('[');
+  const t = line.trim();
+  // [Verse 1] style OR plain PNW-style headers like "Verse1", "Chorus", "Bridge", "PreChorus"
+  if (t.startsWith('[')) return true;
+  return /^(verse|chorus|bridge|pre.?chorus|intro|outro|tag|interlude|hook|vamp|instrumental|refrain)\s*\d*$/i.test(t);
 }
 
 function extractChordsFromChart(chartContent) {

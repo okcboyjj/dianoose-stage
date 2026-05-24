@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Printer } from "lucide-react";
+import { X, Save, Printer, Clipboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ChordDiagramPopup from "./ChordDiagram";
@@ -69,6 +69,19 @@ export default function ChartBuilderModal({ song, onClose, onSave }) {
 
   const handleSave = () => onSave?.(chartContent);
 
+  // Strip invisible/non-printable unicode chars that PNW Chords sometimes includes,
+  // while preserving all spaces, tabs, and newlines exactly as pasted.
+  const handlePNWCleanup = useCallback(() => {
+    setChartContent(prev =>
+      prev
+        .replace(/\r\n/g, '\n')           // normalize Windows line endings
+        .replace(/\r/g, '\n')             // normalize old Mac line endings
+        // eslint-disable-next-line no-control-regex
+        .replace(/[^\S\n\t ]/g, '')       // remove zero-width / invisible chars but keep spaces, tabs, newlines
+        .replace(/[ \t]+$/gm, '')         // trim trailing spaces per line (safe — doesn't affect alignment)
+    );
+  }, []);
+
   const TABS = [
     { id: 'edit', label: '✏ Edit' },
     { id: 'preview', label: '👁 Preview' },
@@ -131,12 +144,25 @@ export default function ChartBuilderModal({ song, onClose, onSave }) {
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-5 pb-5">
             {activeTab === 'edit' && (
-              <Textarea
-                value={chartContent}
-                onChange={e => setChartContent(e.target.value)}
-                className="w-full min-h-[380px] bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-none"
-                placeholder="[Verse 1]&#10;G      Em&#10;You are here, moving in our midst..."
-              />
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-end">
+                  <button
+                    onClick={handlePNWCleanup}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-1.5 transition-colors"
+                    title="Removes invisible characters only — preserves all spacing and alignment"
+                  >
+                    <Clipboard className="w-3 h-3" />
+                    Clean PNW paste
+                  </button>
+                </div>
+                <Textarea
+                  value={chartContent}
+                  onChange={e => setChartContent(e.target.value)}
+                  className="w-full min-h-[380px] bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-none whitespace-pre"
+                  placeholder={"[Verse 1]\nC#m                    A\n  There is One on the throne\n  E     G#m\nJesus, holy"}
+                  style={{ whiteSpace: 'pre', overflowWrap: 'normal' }}
+                />
+              </div>
             )}
 
             {activeTab === 'preview' && (
