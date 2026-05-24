@@ -21,8 +21,10 @@ function indexToNote(idx, preferFlats = false) {
   return note;
 }
 
-export function transposeNote(note, semitones, targetKey) {
-  const preferFlats = false;
+const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
+
+export function transposeNote(note, semitones, targetKey, forceFlats) {
+  const preferFlats = forceFlats !== undefined ? forceFlats : flatKeys.includes(targetKey);
   // parse root + quality
   const match = note.match(/^([A-G][b#]?)(.*)/);
   if (!match) return note;
@@ -33,26 +35,26 @@ export function transposeNote(note, semitones, targetKey) {
   return indexToNote(newIdx, preferFlats) + quality;
 }
 
-export function transposeChord(chord, semitones, targetKey) {
+export function transposeChord(chord, semitones, targetKey, forceFlats) {
   if (!chord || semitones === 0) return chord;
   // Handle slash chords: C/G
   if (chord.includes('/')) {
     const [top, bass] = chord.split('/');
-    return transposeChord(top, semitones, targetKey) + '/' + transposeChord(bass, semitones, targetKey);
+    return transposeChord(top, semitones, targetKey, forceFlats) + '/' + transposeChord(bass, semitones, targetKey, forceFlats);
   }
-  return transposeNote(chord, semitones, targetKey);
+  return transposeNote(chord, semitones, targetKey, forceFlats);
 }
 
 // Parse a chord line and transpose all chords
-export function transposeChordLine(line, semitones, targetKey) {
+export function transposeChordLine(line, semitones, targetKey, forceFlats) {
   if (semitones === 0) return line;
   // Match chord tokens (letters followed by chord qualifiers)
   return line.replace(/\b([A-G][b#]?(?:maj7|maj|min|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?)\b/g, (match) => {
-    return transposeChord(match, semitones, targetKey);
+    return transposeChord(match, semitones, targetKey, forceFlats);
   });
 }
 
-export function transposeFullChart(chartContent, semitones, targetKey) {
+export function transposeFullChart(chartContent, semitones, targetKey, forceFlats) {
   if (!chartContent || semitones === 0) return chartContent;
   return chartContent.split('\n').map(line => {
     // Only transpose lines that look like chord lines (not section headers, not lyrics)
@@ -64,14 +66,16 @@ export function transposeFullChart(chartContent, semitones, targetKey) {
     const hasChords = chordPattern.test(trimmed);
     // If line starts with a chord and has short tokens, treat as chord line
     if (hasChords && wordCount <= 8 && !/[,!?]/.test(trimmed)) {
-      return transposeChordLine(line, semitones, targetKey);
+      return transposeChordLine(line, semitones, targetKey, forceFlats);
     }
     return line;
   }).join('\n');
 }
 
 export const NOTES_IN_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-export const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const ALL_KEYS_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const ALL_KEYS_FLAT  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+export const ALL_KEYS = ALL_KEYS_SHARP; // default export kept for compatibility
 
 export function semitonesBetween(fromKey, toKey) {
   const from = noteToIndex(fromKey);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Music } from "lucide-react";
-import { transposeFullChart, chartToNashville, ALL_KEYS, suggestCapo } from "./ChordTransposer";
+import { transposeFullChart, chartToNashville, ALL_KEYS_SHARP, ALL_KEYS_FLAT, suggestCapo } from "./ChordTransposer";
 
 // ── Chord extraction from chart ───────────────────────────────────────────────
 const CHORD_REGEX = /\b([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11)?(?:\/[A-G][b#]?)?)\b/g;
@@ -215,6 +215,7 @@ function ChordLine({ line, onChordClick }) {
 export default function SongPreviewModal({ song, initialTab = 'chart', onClose, onEdit }) {
   const [tab, setTab] = useState(initialTab);
   const [semitones, setSemitones] = useState(0);
+  const [useFlats, setUseFlats] = useState(false);
   const [nashville, setNashville] = useState(false);
   const [fontSize, setFontSize] = useState(13);
   const [activeChord, setActiveChord] = useState(null);
@@ -230,10 +231,14 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
   }, [onClose]);
 
   const originalKey = song?.key || 'G';
-  const currentKey = ALL_KEYS[(ALL_KEYS.indexOf(originalKey) + semitones + 120) % 12] || originalKey;
+  // Find the original key index in either scale, then look up in the preferred scale
+  const origIdxSharp = ALL_KEYS_SHARP.findIndex(k => k === originalKey);
+  const origIdx = origIdxSharp !== -1 ? origIdxSharp : ALL_KEYS_FLAT.findIndex(k => k === originalKey);
+  const KEYS = useFlats ? ALL_KEYS_FLAT : ALL_KEYS_SHARP;
+  const currentKey = origIdx !== -1 ? KEYS[((origIdx + semitones) % 12 + 12) % 12] : originalKey;
   const capo = suggestCapo(originalKey, currentKey);
 
-  const transposedChart = transposeFullChart(song?.chart_content || '', semitones, currentKey);
+  const transposedChart = transposeFullChart(song?.chart_content || '', semitones, currentKey, useFlats);
   const displayChart = nashville ? chartToNashville(transposedChart, currentKey) : transposedChart;
 
   // Extract only the chords actually in this song
@@ -396,6 +401,10 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                             </span>
                             <button onClick={() => setSemitones(s => s + 1)} className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors font-bold">+</button>
                           </div>
+                          <button onClick={() => setUseFlats(f => !f)}
+                            className={`w-8 h-8 rounded-lg text-sm font-bold border transition-all ${useFlats ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/8 text-muted-foreground hover:text-foreground'}`}>
+                            {useFlats ? '♭' : '♯'}
+                          </button>
                           <button onClick={() => setNashville(n => !n)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${nashville ? 'bg-primary text-primary-foreground border-primary' : 'bg-white/5 border-white/8 text-muted-foreground hover:text-foreground'}`}>
                             NNS
