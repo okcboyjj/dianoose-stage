@@ -35,15 +35,16 @@ function InteractiveChordLine({ line, onChordClick }) {
     <span>
       {parts.map((p, i) =>
         p.type === 'chord' ? (
-          <button
+          <span
             key={i}
             onClick={() => onChordClick(p.value)}
-            className="text-primary font-bold hover:bg-primary/20 rounded px-0.5 transition-colors cursor-pointer font-mono"
+            className="text-primary font-bold hover:bg-primary/20 rounded transition-colors cursor-pointer"
+            style={{ display: 'inline', minWidth: 0, minHeight: 0, padding: 0, margin: 0, lineHeight: 'inherit', font: 'inherit' }}
           >
             {p.value}
-          </button>
+          </span>
         ) : (
-          <span key={i} className="font-mono">{p.value}</span>
+          <span key={i}>{p.value}</span>
         )
       )}
     </span>
