@@ -9,10 +9,11 @@ const CHORD_REGEX = /\b([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|
 function isChordLine(line) {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith('[')) return false;
-  if (!/^[A-G]/.test(trimmed)) return false;
-  const tokens = trimmed.split(/\s+/);
-  const chordCount = tokens.filter(t => /^[A-G][b#]?/.test(t)).length;
-  return chordCount >= tokens.length * 0.6 && tokens.length <= 10 && !/[,!?]/.test(trimmed);
+  // Must have at least one chord token somewhere in the line
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
+  // A chord line: majority of non-empty tokens are chords, no sentence punctuation
+  return chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed);
 }
 
 function isSectionHeader(line) {

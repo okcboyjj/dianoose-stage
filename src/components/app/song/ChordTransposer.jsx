@@ -68,11 +68,9 @@ export function transposeFullChart(chartContent, semitones, targetKey, forceFlat
     const trimmed = line.trim();
     if (trimmed.startsWith('[') || trimmed === '') return line;
     // Heuristic: chord lines have few words and match chord patterns
-    const chordPattern = /^[A-G][b#]?/;
-    const wordCount = trimmed.split(/\s+/).length;
-    const hasChords = chordPattern.test(trimmed);
-    // If line starts with a chord and has short tokens, treat as chord line
-    if (hasChords && wordCount <= 8 && !/[,!?]/.test(trimmed)) {
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
+    const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
+    if (chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed)) {
       return transposeChordLine(line, semitones, targetKey, forceFlats);
     }
     return line;
@@ -120,10 +118,9 @@ export function chartToNashville(chartContent, keyRoot) {
   return chartContent.split('\n').map(line => {
     const trimmed = line.trim();
     if (trimmed.startsWith('[') || trimmed === '') return line;
-    const chordPattern = /^[A-G][b#]?/;
-    const wordCount = trimmed.split(/\s+/).length;
-    const hasChords = chordPattern.test(trimmed);
-    if (hasChords && wordCount <= 8 && !/[,!?]/.test(trimmed)) {
+    const tokens = trimmed.split(/\s+/).filter(Boolean);
+    const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
+    if (chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed)) {
       return line.replace(/\b([A-G][b#]?(?:maj7|maj|min|m7|m|sus4|sus2|sus|add9|dim7|dim|aug|7)?(?:\/[A-G][b#]?)?)\b/g, (match) => {
         const slashIdx = match.indexOf('/');
         if (slashIdx > -1) {
