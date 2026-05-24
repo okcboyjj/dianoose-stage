@@ -32,6 +32,30 @@ function ChannelItem({ channel, isActive, unread, onClick }) {
   );
 }
 
+function formatTimestamp(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  const timeStr = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return timeStr;
+  if (isYesterday) return `Yesterday ${timeStr}`;
+  return `${date.toLocaleDateString([], { month: "short", day: "numeric" })} ${timeStr}`;
+}
+
+function DateDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 my-2">
+      <div className="flex-1 h-px bg-border/30" />
+      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider whitespace-nowrap">{label}</span>
+      <div className="flex-1 h-px bg-border/30" />
+    </div>
+  );
+}
+
 function MessageBubble({ msg, currentUserId, onReact, onReply, onPin }) {
   const isMe = msg.sender_id === currentUserId;
   const [showReact, setShowReact] = useState(false);
@@ -83,6 +107,11 @@ function MessageBubble({ msg, currentUserId, onReact, onReply, onPin }) {
             </div>
           )}
         </div>
+
+        {/* Timestamp */}
+        <p className={`text-[10px] text-muted-foreground/60 px-1 ${isMe ? "text-right" : "text-left"}`}>
+          {formatTimestamp(msg.created_date)}
+        </p>
 
         {/* Reactions */}
         {msg.reactions?.length > 0 && (
@@ -402,16 +431,27 @@ export default function MessageCenter({ church, user, services, members }) {
                   <p className="text-xs text-muted-foreground mt-1">Be the first to message in #{activeChannel.name}</p>
                 </div>
               )}
-              {messages.map(msg => (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  currentUserId={currentUserId}
-                  onReact={handleReact}
-                  onReply={setReplyTo}
-                  onPin={handlePin}
-                />
-              ))}
+              {messages.map((msg, i) => {
+                const msgDate = msg.created_date ? new Date(msg.created_date).toDateString() : null;
+                const prevDate = i > 0 && messages[i - 1].created_date ? new Date(messages[i - 1].created_date).toDateString() : null;
+                const showDivider = msgDate && msgDate !== prevDate;
+                const now = new Date();
+                const today = now.toDateString();
+                const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+                const dividerLabel = msgDate === today ? "Today" : msgDate === yesterday.toDateString() ? "Yesterday" : msgDate ? new Date(msg.created_date).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : "";
+                return (
+                  <div key={msg.id}>
+                    {showDivider && <DateDivider label={dividerLabel} />}
+                    <MessageBubble
+                      msg={msg}
+                      currentUserId={currentUserId}
+                      onReact={handleReact}
+                      onReply={setReplyTo}
+                      onPin={handlePin}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {/* Reply preview */}
