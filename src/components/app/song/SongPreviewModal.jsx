@@ -204,7 +204,7 @@ function ChordLine({ line, onChordClick }) {
             {p.value}
           </button>
         ) : (
-          <span key={i} className="font-mono">{p.value}</span>
+          <span key={i} className="font-mono whitespace-pre">{p.value}</span>
         )
       )}
     </span>
@@ -256,11 +256,11 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
       );
       if (line.trim() === '') return <div key={i} className="h-1.5" />;
       if (isChordLine(line)) return (
-        <p key={i} className="text-foreground leading-relaxed" style={{ fontSize }}>
+        <p key={i} className="text-foreground leading-relaxed whitespace-pre" style={{ fontSize }}>
           <ChordLine line={line} onChordClick={setActiveChord} />
         </p>
       );
-      return <p key={i} className="text-muted-foreground leading-relaxed" style={{ fontSize }}>{line}</p>;
+      return <p key={i} className="text-muted-foreground leading-relaxed whitespace-pre" style={{ fontSize }}>{line}</p>;
     });
   };
 
