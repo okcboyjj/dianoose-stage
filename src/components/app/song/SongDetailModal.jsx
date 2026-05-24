@@ -58,7 +58,13 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
   const handleSave = async () => {
     setSaving(true); setSaveError(null);
     try {
-      const payload = { ...form, church_id: churchId, arrangement_sections: arrangementSections };
+      const payload = {
+        ...form,
+        church_id: churchId,
+        arrangement_sections: arrangementSections,
+        bpm: form.bpm !== "" && form.bpm !== null && form.bpm !== undefined ? Number(form.bpm) : undefined,
+        capo: form.capo !== "" && form.capo !== null && form.capo !== undefined ? Number(form.capo) : undefined,
+      };
       if (song?.id) await SongEntity.update(song.id, payload);
       else await SongEntity.create(payload);
       onSave();
