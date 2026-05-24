@@ -21,10 +21,8 @@ function indexToNote(idx, preferFlats = false) {
   return note;
 }
 
-const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
-
 export function transposeNote(note, semitones, targetKey) {
-  const preferFlats = flatKeys.includes(targetKey);
+  const preferFlats = false;
   // parse root + quality
   const match = note.match(/^([A-G][b#]?)(.*)/);
   if (!match) return note;
@@ -73,7 +71,7 @@ export function transposeFullChart(chartContent, semitones, targetKey) {
 }
 
 export const NOTES_IN_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-export const ALL_KEYS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+export const ALL_KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 export function semitonesBetween(fromKey, toKey) {
   const from = noteToIndex(fromKey);
