@@ -16,11 +16,11 @@ const ARRANGEMENT_SECTIONS = ['Intro', 'V1', 'Pre-Ch', 'Chorus', 'V2', 'Bridge',
 
 const TABS = [
   { id: 'details', label: 'Details', icon: null },
-  { id: 'malayalam', label: 'മലയാളം', icon: '🕊' },
-  { id: 'chart', label: 'Chart', icon: '📄' },
-  { id: 'lyrics', label: 'Lyrics', icon: '🎵' },
-  { id: 'patches', label: 'Patches', icon: '🎛' },
-  { id: 'prod', label: 'Prod', icon: '🎬' },
+  { id: 'malayalam', label: 'മലയാളം', icon: null },
+  { id: 'chart', label: 'Chart', icon: null },
+  { id: 'lyrics', label: 'Lyrics', icon: null },
+  { id: 'patches', label: 'Patches', icon: null },
+  { id: 'prod', label: 'Prod', icon: null },
 ];
 
 export default function SongDetailModal({ song, onClose, onSave, churchId }) {
@@ -319,7 +319,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
                       onClick={() => { setTab('chart'); setTimeout(() => setShowChartBuilder(true), 100); }}
                       className="flex items-center gap-2 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 rounded-xl px-4 py-2.5 hover:bg-primary/20 transition-colors w-full justify-center mt-1"
                     >
-                      📄 Open Chart Builder →
+                      Open Chart Builder →
                     </button>
                   </div>
                 )}

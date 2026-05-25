@@ -31,7 +31,7 @@ function UploadStep({ onFileSelected, uploading }) {
     <div className="space-y-4">
       <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
         <p className="text-[11px] text-primary/80 font-semibold leading-relaxed">
-          📷 Upload a photo, screenshot, or scan of a worship chart. The AI will extract chords, lyrics, section headers, and Malayalam content automatically.
+          Upload a photo, screenshot, or scan of a worship chart. The AI will extract chords, lyrics, section headers, and Malayalam content automatically.
         </p>
       </div>
 
@@ -59,7 +59,7 @@ function UploadStep({ onFileSelected, uploading }) {
               <p className="text-xs text-muted-foreground mt-1">or click to browse · JPG, PNG, WEBP, PDF</p>
             </div>
             <div className="flex flex-wrap gap-2 justify-center">
-              {['📷 Camera Photo', '🖼 Screenshot', '📄 PDF', '📠 Scanned Paper'].map(t => (
+              {['Camera Photo', 'Screenshot', 'PDF', 'Scanned Paper'].map(t => (
                 <span key={t} className="text-[10px] bg-white/5 border border-white/10 rounded-full px-3 py-1 text-muted-foreground">{t}</span>
               ))}
             </div>
@@ -140,7 +140,6 @@ function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExist
       {/* Confidence notes */}
       {hasConfidenceWarning && (
         <div className="flex items-start gap-2 bg-white/4 border border-white/10 rounded-xl px-4 py-3">
-          <span className="text-sm">🤖</span>
           <p className="text-[11px] text-muted-foreground leading-relaxed">{d.confidence_notes}</p>
         </div>
       )}
@@ -361,7 +360,7 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
           <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
             <div>
               <h2 className="text-base font-bold text-foreground">
-                {step === 'done' ? '✅ Import Complete' : '📷 Scan Chart'}
+                {step === 'done' ? 'Import Complete' : 'Scan Chart'}
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {step === 'upload' && 'Upload a photo or scan of a worship chart'}

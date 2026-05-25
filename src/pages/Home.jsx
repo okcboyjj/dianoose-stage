@@ -1024,10 +1024,10 @@ function SongModal({ song, onClose, onSave, churchId }) {
 
   const TABS = [
     { id: "details", label: "Details" },
-    { id: "chart", label: "📄 Chart" },
-    { id: "patches", label: "🎭 Patches" },
-    { id: "rehearsal", label: "🎵 Rehearsal" },
-    { id: "prod", label: "🎬 Prod" },
+    { id: "chart", label: "Chart" },
+    { id: "patches", label: "Patches" },
+    { id: "rehearsal", label: "Rehearsal" },
+    { id: "prod", label: "Prod" },
   ];
 
   return (
@@ -1113,7 +1113,7 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
     ? (song.transliteration_title || (isML ? song.title : song.artist))
     : song.artist;
 
-  const langBadgeMap = { Malayalam: { label: "ML", cls: "bg-orange-500/15 text-orange-300 border-orange-500/25" }, Mixed: { label: "BI", cls: "bg-violet-500/15 text-violet-300 border-violet-500/25" } };
+  const langBadgeMap = { Malayalam: { label: "ML", cls: "bg-orange-500/15 text-orange-300 border-orange-500/25" } };
   const langBadge = langBadgeMap[song.language];
 
   return (
@@ -1192,13 +1192,13 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
           onClick={e => { e.stopPropagation(); onPreview(song, 'chart'); }}
           className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-white/4 hover:bg-primary/10 rounded-lg py-1.5 transition-colors"
         >
-          📄 Chart
+          Chart
         </button>
         <button
           onClick={e => { e.stopPropagation(); onPreview(song, 'patches'); }}
           className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground bg-white/4 hover:bg-white/10 rounded-lg py-1.5 transition-colors"
         >
-          🎛 Patch
+          Patch
         </button>
       </div>
     </div>
@@ -1507,8 +1507,8 @@ function MainApp({ onLogout }) {
                 </select>
               </div>
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-                {["All", "★", "ML", "BI", "EN", "G", "A", "B", "C", "D", "E", "F"].map(k => (
-                  <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : `bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 ${k === "ML" ? "hover:text-orange-300" : k === "BI" ? "hover:text-violet-300" : ""}`}`}>{k}</button>
+                {["All", "★", "ML", "EN", "G", "A", "B", "C", "D", "E", "F"].map(k => (
+                  <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : `bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 ${k === "ML" ? "hover:text-orange-300" : ""}`}`}>{k}</button>
                 ))}
               </div>
             </div>
@@ -1517,7 +1517,6 @@ function MainApp({ onLogout }) {
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
                 if (songKeyFilter === "ML") return s.language === "Malayalam";
-                if (songKeyFilter === "BI") return s.language === "Mixed";
                 if (songKeyFilter === "EN") return !s.language || s.language === "English";
                 const matchLang = songKeyFilter === "All" || s.key === songKeyFilter;
                 const q = songSearch.toLowerCase();
@@ -1550,7 +1549,6 @@ function MainApp({ onLogout }) {
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
                 if (songKeyFilter === "ML") return s.language === "Malayalam";
-                if (songKeyFilter === "BI") return s.language === "Mixed";
                 if (songKeyFilter === "EN") return !s.language || s.language === "English";
                 const matchLang = songKeyFilter === "All" || s.key === songKeyFilter;
                 const q = songSearch.toLowerCase();
