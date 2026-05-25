@@ -48,57 +48,57 @@ Rules:
 
     const malayalamPrompt = `You are a Malayalam translation specialist for Christian worship songs.
 
-Look at this worship chart image, extract the English lyrics (ignore chord symbols), then produce:
-1. A faithful Malayalam translation in proper Malayalam Unicode script
-2. An English phonetic transliteration of that Malayalam
+Given English worship song lyrics, do the following in order:
+1. First produce a Manglish (English phonetic) transliteration of the Malayalam meaning — how the Malayalam words would sound written in English letters
+2. Then convert that Manglish into proper Malayalam Unicode script
 
 Rules:
 - Preserve section structure (Verse 1, Chorus, Bridge etc.)
 - Keep the same number of lines per section
 - Translation should be singable and spiritually accurate
-- If chart is already in Malayalam, extract it directly
+- transliteration_lyrics = the Manglish phonetic version
+- malayalam_lyrics = the full Malayalam Unicode script derived from the transliteration
 
-Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }`;
+Return JSON: { transliteration_lyrics: string, malayalam_lyrics: string }`;
 
-    const [mainResult, malayalamResult] = await Promise.all([
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: mainPrompt,
-        model: "gpt_5_4",
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            artist: { type: "string" },
-            key: { type: "string" },
-            bpm: { type: "number" },
-            capo: { type: "number" },
-            time_signature: { type: "string" },
-            language: { type: "string" },
-            lyrics: { type: "string" },
-            malayalam_lyrics: { type: "string" },
-            transliteration_lyrics: { type: "string" },
-            confidence_notes: { type: "string" },
-            sections: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  lines: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        lyric: { type: "string" },
-                        chords: {
-                          type: "array",
-                          items: {
-                            type: "object",
-                            properties: {
-                              chord: { type: "string" },
-                              word_index: { type: "number" }
-                            }
+    // Step 1: Extract chart structure from image
+    const mainResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: mainPrompt,
+      model: "gpt_5_4",
+      file_urls: [file_url],
+      response_json_schema: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          artist: { type: "string" },
+          key: { type: "string" },
+          bpm: { type: "number" },
+          capo: { type: "number" },
+          time_signature: { type: "string" },
+          language: { type: "string" },
+          lyrics: { type: "string" },
+          malayalam_lyrics: { type: "string" },
+          transliteration_lyrics: { type: "string" },
+          confidence_notes: { type: "string" },
+          sections: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                lines: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      lyric: { type: "string" },
+                      chords: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            chord: { type: "string" },
+                            word_index: { type: "number" }
                           }
                         }
                       }
@@ -109,19 +109,22 @@ Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }`;
             }
           }
         }
-      }),
-      base44.asServiceRole.integrations.Core.InvokeLLM({
-        prompt: malayalamPrompt,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            malayalam_lyrics: { type: "string" },
-            transliteration_lyrics: { type: "string" }
-          }
+      }
+    });
+
+    // Step 2: Use the extracted English lyrics to generate Manglish transliteration,
+    // then derive Malayalam script from it — passing lyrics as text (faster, no image needed)
+    const englishLyrics = mainResult.lyrics || '';
+    const malayalamResult = englishLyrics ? await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `${malayalamPrompt}\n\nHere are the extracted English lyrics to translate:\n\n${englishLyrics}`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          malayalam_lyrics: { type: "string" },
+          transliteration_lyrics: { type: "string" }
         }
-      }).catch(() => null)
-    ]);
+      }
+    }).catch(() => null) : null;
 
     // Use mainResult as pass1, build flat lyricLines for chart builder
     const pass1 = mainResult;
