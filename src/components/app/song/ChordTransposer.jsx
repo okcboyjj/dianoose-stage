@@ -53,7 +53,7 @@ export function transposeChordLine(line, semitones, targetKey, forceFlats) {
   const needsFlatPass = semitones === 0 && (forceFlats || flatKeys.includes(targetKey));
   if (semitones === 0 && !needsFlatPass) return line;
   // Match chord tokens (letters followed by chord qualifiers)
-  return line.replace(/\b([A-G][b#]?(?:maj7|maj|min|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?)\b/g, (match) => {
+  return line.replace(/(?<![A-Za-z#b])([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?)(?![A-Za-z#])/g, (match) => {
     return transposeChord(match, semitones, targetKey, forceFlats);
   });
 }
@@ -70,7 +70,7 @@ export function transposeFullChart(chartContent, semitones, targetKey, forceFlat
     // Heuristic: chord lines have few words and match chord patterns
     const tokens = trimmed.split(/\s+/).filter(Boolean);
     const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
-    if (chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed)) {
+    if (chordCount > 0 && chordCount >= tokens.length * 0.45 && !/[,!?]/.test(trimmed)) {
       return transposeChordLine(line, semitones, targetKey, forceFlats);
     }
     return line;
@@ -121,7 +121,7 @@ export function chartToNashville(chartContent, keyRoot) {
     const tokens = trimmed.split(/\s+/).filter(Boolean);
     const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
     if (chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed)) {
-      return line.replace(/\b([A-G][b#]?(?:maj7|maj|min|m7|m|sus4|sus2|sus|add9|dim7|dim|aug|7)?(?:\/[A-G][b#]?)?)\b/g, (match) => {
+      return line.replace(/(?<![A-Za-z#b])([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|dim7|dim|aug|7)?(?:\/[A-G][b#]?)?)(?![A-Za-z#])/g, (match) => {
         const slashIdx = match.indexOf('/');
         if (slashIdx > -1) {
           const top = match.slice(0, slashIdx);
