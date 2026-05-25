@@ -290,7 +290,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
   const hasLyrics = !!song?.lyrics?.trim();
   const hasMLLyrics = !!song?.malayalam_lyrics?.trim();
   const hasTranslitLyrics = !!song?.transliteration_lyrics?.trim();
-  const isML = song?.language === 'Malayalam' || song?.language === 'Mixed';
+  const isML = song?.language === 'Malayalam';
   const isSpotifyImport = !!song?.spotify_url;
 
   const TABS = [
@@ -347,7 +347,6 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                   {(song?.language === 'Malayalam' && song?.malayalam_title) ? song.malayalam_title : (song?.title || 'Untitled')}
                 </h2>
                 {song?.language === 'Malayalam' && <span className="text-[9px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded px-1.5 py-0.5 shrink-0">ML</span>}
-                {song?.language === 'Mixed' && <span className="text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/25 rounded px-1.5 py-0.5 shrink-0">BI</span>}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5 truncate">
                 {isML && song?.transliteration_title ? song.transliteration_title : (song?.artist || '')}

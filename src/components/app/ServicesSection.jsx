@@ -161,7 +161,7 @@ function ServiceDetailModal({ service, songs, allMembers, currentUser, isAdmin, 
                               {(song.language === 'Malayalam' && song.malayalam_title) ? song.malayalam_title : song.title}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {(song.language === 'Malayalam' || song.language === 'Mixed') && song.transliteration_title
+                              {song.language === 'Malayalam' && song.transliteration_title
                                 ? song.transliteration_title
                                 : song.artist}
                               {song.key ? ` · Key of ${song.key}` : ""}

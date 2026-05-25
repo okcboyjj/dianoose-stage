@@ -68,8 +68,7 @@
       "type": "string",
       "enum": [
         "English",
-        "Malayalam",
-        "Mixed"
+        "Malayalam"
       ],
       "default": "English"
     },

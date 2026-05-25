@@ -87,8 +87,7 @@
       "type": "string",
       "enum": [
         "English",
-        "Malayalam",
-        "Mixed"
+        "Malayalam"
       ],
       "default": "English",
       "description": "Primary language of the song"
@@ -99,7 +98,7 @@
     },
     "transliteration_title": {
       "type": "string",
-      "description": "Malayalam title in English transliteration (e.g. Mangipokatha Sneham)"
+      "description": "Malayalam title in English transliteration"
     },
     "malayalam_lyrics": {
       "type": "string",
@@ -120,16 +119,13 @@
         "Needs Review",
         "Verified"
       ],
-      "default": "Unverified",
-      "description": "Verification status of the song data"
+      "default": "Unverified"
     },
     "verified_by": {
-      "type": "string",
-      "description": "Name or email of the person who verified this song"
+      "type": "string"
     },
     "verified_at": {
-      "type": "string",
-      "description": "ISO timestamp when song was verified"
+      "type": "string"
     }
   },
   "required": [],

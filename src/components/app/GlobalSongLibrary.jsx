@@ -59,7 +59,6 @@ const LANG_FILTER_OPTIONS = [
   { id: "All", label: "All" },
   { id: "English", label: "EN" },
   { id: "Malayalam", label: "ML" },
-  { id: "Mixed", label: "BI" },
 ];
 
 function Artwork({ song, size = "md" }) {
@@ -132,11 +131,11 @@ function NativeSongRow({ song, isAdded, isCloning, onAdd }) {
             {song.is_verified && <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" title="Verified" />}
             {song.verified_status === "Verified" && !song.is_verified && <span className="text-[9px] font-bold bg-green-500/15 text-green-300 border border-green-500/25 rounded px-1.5 py-0.5">✓</span>}
             {song.language === "Malayalam" && <span className="text-[9px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded px-1.5 py-0.5">ML</span>}
-            {song.language === "Mixed" && <span className="text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/25 rounded px-1.5 py-0.5">BI</span>}
+
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeClass}`}>{song.artist}</span>
-            {(song.language === "Malayalam" || song.language === "Mixed") && song.transliteration_title && (
+            {song.language === "Malayalam" && song.transliteration_title && (
               <span className="text-[10px] text-muted-foreground truncate max-w-[160px] opacity-70 italic">{song.transliteration_title}</span>
             )}
             {!song.transliteration_title && song.album && <span className="text-[10px] text-muted-foreground truncate max-w-[130px] hidden sm:block opacity-70">{song.album}</span>}
@@ -421,6 +420,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
     const matchArtist = artistFilter === "All" || s.artist === artistFilter;
     const matchVerified = sortBy !== "verified" || s.is_verified;
     const matchLang = langFilter === "All" || s.language === langFilter || (!s.language && langFilter === "English");
+
     return matchSearch && matchKey && matchArtist && matchVerified && matchLang;
   }).sort((a, b) => {
     if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
