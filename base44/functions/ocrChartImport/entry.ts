@@ -29,6 +29,9 @@ Extract ALL content carefully, preserving the exact structure. Return a JSON obj
 - source_type: "OCR Import"
 
 IMPORTANT RULES:
+- This document is a PRINTED worship chart (from VerseView or similar software) with HANDWRITTEN chord corrections added on top.
+- HANDWRITTEN chord annotations ALWAYS take priority over the printed chords beneath them. If a handwritten chord is scrawled above or beside a printed chord, use the handwritten one.
+- Handwritten chords are typically written in pen/pencil directly above the lyric line or crossing out a printed chord. They are the FINAL intended version.
 - Preserve chord spacing EXACTLY as it appears above lyrics
 - Malayalam Unicode characters must be preserved exactly - do NOT convert to transliteration
 - If a line has chords above lyrics, put chords on one line, lyrics on the next
@@ -36,7 +39,8 @@ IMPORTANT RULES:
 - If you see "Capo X" notation, extract the number
 - Nashville numbers (1, 4, 5, etc.) should be preserved as-is in chart_content
 - Slash chords like G/B, D/F# should be preserved exactly
-- If confidence is low for any section, mention it in confidence_notes
+- If you detect handwritten corrections, mention them in confidence_notes (e.g. "Handwritten chord corrections detected and applied in bars 2, 5")
+- If confidence is low for any handwritten symbol, mention it in confidence_notes
 - Never fabricate content that isn't clearly visible in the image`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
