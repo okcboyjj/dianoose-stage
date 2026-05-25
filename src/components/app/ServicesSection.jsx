@@ -83,10 +83,17 @@ function ServiceDetailModal({ service, songs, allMembers, currentUser, isAdmin, 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const serviceSongs = (form.songs || []).map(id => songs.find(s => s.id === id)).filter(Boolean);
-  const availableSongs = songs.filter(s =>
-    !(form.songs || []).includes(s.id) &&
-    (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()))
-  );
+  const availableSongs = songs.filter(s => {
+    if ((form.songs || []).includes(s.id)) return false;
+    if (!songSearch) return true;
+    const q = songSearch.toLowerCase();
+    return (
+      s.title?.toLowerCase().includes(q) ||
+      s.malayalam_title?.toLowerCase().includes(q) ||
+      s.transliteration_title?.toLowerCase().includes(q) ||
+      s.artist?.toLowerCase().includes(q)
+    );
+  });
 
   const addSong = (songId) => set("songs", [...(form.songs || []), songId]);
   const removeSong = (songId) => set("songs", (form.songs || []).filter(id => id !== songId));
@@ -150,8 +157,15 @@ function ServiceDetailModal({ service, songs, allMembers, currentUser, isAdmin, 
                         <div key={song.id} className="flex items-center gap-3 bg-secondary/30 rounded-xl px-4 py-3 group">
                           <span className="text-xs text-muted-foreground w-5 text-center font-bold">{i + 1}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">{song.title}</p>
-                            <p className="text-xs text-muted-foreground">{song.artist}{song.key ? ` · Key of ${song.key}` : ""}</p>
+                            <p className="text-sm font-semibold text-foreground truncate" style={song.language === 'Malayalam' ? { fontFamily: 'system-ui, sans-serif' } : {}}>
+                              {(song.language === 'Malayalam' && song.malayalam_title) ? song.malayalam_title : song.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {(song.language === 'Malayalam' || song.language === 'Mixed') && song.transliteration_title
+                                ? song.transliteration_title
+                                : song.artist}
+                              {song.key ? ` · Key of ${song.key}` : ""}
+                            </p>
                           </div>
                           {isAdmin && <button onClick={() => removeSong(song.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>}
                         </div>
@@ -168,7 +182,9 @@ function ServiceDetailModal({ service, songs, allMembers, currentUser, isAdmin, 
                         {availableSongs.slice(0, 20).map(song => (
                           <button key={song.id} onClick={() => addSong(song.id)} className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-background/30 hover:bg-primary/10 hover:border-primary/30 border border-transparent transition-all text-left group">
                             <Music className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary shrink-0" />
-                            <span className="text-sm text-foreground flex-1 truncate">{song.title}</span>
+                            <span className="text-sm text-foreground flex-1 truncate" style={song.language === 'Malayalam' ? { fontFamily: 'system-ui, sans-serif' } : {}}>
+                              {(song.language === 'Malayalam' && song.malayalam_title) ? song.malayalam_title : song.title}
+                            </span>
                             {song.key && <span className="text-xs text-primary/70 font-medium">{song.key}</span>}
                             <Plus className="w-3.5 h-3.5 text-primary opacity-0 group-hover:opacity-100 shrink-0" />
                           </button>

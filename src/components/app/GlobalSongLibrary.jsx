@@ -55,6 +55,13 @@ const SORT_OPTIONS = [
   { id: "newest", label: "Newest" },
 ];
 
+const LANG_FILTER_OPTIONS = [
+  { id: "All", label: "All" },
+  { id: "English", label: "EN" },
+  { id: "Malayalam", label: "ML" },
+  { id: "Mixed", label: "BI" },
+];
+
 function Artwork({ song, size = "md" }) {
   const [err, setErr] = useState(false);
   const s = size === "lg" ? "w-16 h-16" : "w-12 h-12";
@@ -119,12 +126,20 @@ function NativeSongRow({ song, isAdded, isCloning, onAdd }) {
         <Artwork song={song} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors">{song.title}</p>
+            <p className="text-sm font-semibold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors">
+              {(song.language === "Malayalam" && song.malayalam_title) ? song.malayalam_title : song.title}
+            </p>
             {song.is_verified && <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" title="Verified" />}
+            {song.verified_status === "Verified" && !song.is_verified && <span className="text-[9px] font-bold bg-green-500/15 text-green-300 border border-green-500/25 rounded px-1.5 py-0.5">✓</span>}
+            {song.language === "Malayalam" && <span className="text-[9px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded px-1.5 py-0.5">ML</span>}
+            {song.language === "Mixed" && <span className="text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/25 rounded px-1.5 py-0.5">BI</span>}
           </div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${badgeClass}`}>{song.artist}</span>
-            {song.album && <span className="text-[10px] text-muted-foreground truncate max-w-[130px] hidden sm:block opacity-70">{song.album}</span>}
+            {(song.language === "Malayalam" || song.language === "Mixed") && song.transliteration_title && (
+              <span className="text-[10px] text-muted-foreground truncate max-w-[160px] opacity-70 italic">{song.transliteration_title}</span>
+            )}
+            {!song.transliteration_title && song.album && <span className="text-[10px] text-muted-foreground truncate max-w-[130px] hidden sm:block opacity-70">{song.album}</span>}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -291,6 +306,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   const [showFilters, setShowFilters] = useState(false);
   const [cloning, setCloning] = useState(null);
   const [cloned, setCloned] = useState({});
+  const [langFilter, setLangFilter] = useState("All");
 
   // Spotify
   const [spotifyResults, setSpotifyResults] = useState([]);
@@ -396,13 +412,16 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
     const q = search.toLowerCase();
     const matchSearch = !search ||
       s.title?.toLowerCase().includes(q) ||
+      s.malayalam_title?.toLowerCase().includes(q) ||
+      s.transliteration_title?.toLowerCase().includes(q) ||
       s.artist?.toLowerCase().includes(q) ||
       s.album?.toLowerCase().includes(q) ||
       (s.tags || []).some(t => t.toLowerCase().includes(q));
     const matchKey = keyFilter === "All" || s.key === keyFilter;
     const matchArtist = artistFilter === "All" || s.artist === artistFilter;
     const matchVerified = sortBy !== "verified" || s.is_verified;
-    return matchSearch && matchKey && matchArtist && matchVerified;
+    const matchLang = langFilter === "All" || s.language === langFilter || (!s.language && langFilter === "English");
+    return matchSearch && matchKey && matchArtist && matchVerified && matchLang;
   }).sort((a, b) => {
     if (sortBy === "title") return (a.title || "").localeCompare(b.title || "");
     if (sortBy === "artist") return (a.artist || "").localeCompare(b.artist || "");
@@ -444,6 +463,22 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all ${showFilters ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border/50 text-muted-foreground hover:text-foreground"}`}>
           <Filter className="w-3.5 h-3.5" /> Filters
         </button>
+      </div>
+
+      {/* Language filter chips */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {LANG_FILTER_OPTIONS.map(l => (
+          <button key={l.id} onClick={() => setLangFilter(l.id)}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all border ${
+              langFilter === l.id
+                ? l.id === "Malayalam" ? "bg-orange-500/30 text-orange-200 border-orange-500/40"
+                  : l.id === "Mixed" ? "bg-violet-500/30 text-violet-200 border-violet-500/40"
+                  : "bg-primary text-primary-foreground border-primary shadow-md"
+                : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
+            }`}>
+            {l.label}
+          </button>
+        ))}
       </div>
 
       {/* Sort pills */}

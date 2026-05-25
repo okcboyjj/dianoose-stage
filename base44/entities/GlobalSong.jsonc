@@ -63,6 +63,45 @@
     },
     "is_active": {
       "type": "boolean"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Malayalam",
+        "Mixed"
+      ],
+      "default": "English"
+    },
+    "malayalam_title": {
+      "type": "string"
+    },
+    "transliteration_title": {
+      "type": "string"
+    },
+    "malayalam_lyrics": {
+      "type": "string"
+    },
+    "transliteration_lyrics": {
+      "type": "string"
+    },
+    "source_notes": {
+      "type": "string"
+    },
+    "verified_status": {
+      "type": "string",
+      "enum": [
+        "Unverified",
+        "Needs Review",
+        "Verified"
+      ],
+      "default": "Unverified"
+    },
+    "verified_by": {
+      "type": "string"
+    },
+    "verified_at": {
+      "type": "string"
     }
   },
   "required": [

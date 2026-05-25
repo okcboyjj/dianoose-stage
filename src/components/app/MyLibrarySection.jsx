@@ -208,8 +208,18 @@ export default function MyLibrarySection({ songs, myLibrary, user, church, onRef
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground truncate leading-tight">{song?.title}</p>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{song?.artist}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-bold text-foreground truncate leading-tight" style={song?.language === 'Malayalam' ? { fontFamily: 'system-ui, sans-serif' } : {}}>
+                        {(song?.language === 'Malayalam' && song?.malayalam_title) ? song.malayalam_title : song?.title}
+                      </p>
+                      {song?.language === 'Malayalam' && <span className="text-[9px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded px-1.5 py-0.5 shrink-0">ML</span>}
+                      {song?.language === 'Mixed' && <span className="text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/25 rounded px-1.5 py-0.5 shrink-0">BI</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {(song?.language === 'Malayalam' || song?.language === 'Mixed') && song?.transliteration_title
+                        ? song.transliteration_title
+                        : song?.artist}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {displayKey && (

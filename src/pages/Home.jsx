@@ -1105,6 +1105,15 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
   const displayKey = preferredKey || song.key;
   const extraSections = sections.length > 3 ? sections.length - 3 : 0;
   const artwork = song.artwork_url;
+  const isML = song.language === "Malayalam";
+  const isBI = song.language === "Mixed";
+  const primaryTitle = (isML && song.malayalam_title) ? song.malayalam_title : song.title;
+  const secondaryLine = isML || isBI
+    ? (song.transliteration_title || (isML ? song.title : song.artist))
+    : song.artist;
+
+  const langBadgeMap = { Malayalam: { label: "ML", cls: "bg-orange-500/15 text-orange-300 border-orange-500/25" }, Mixed: { label: "BI", cls: "bg-violet-500/15 text-violet-300 border-violet-500/25" } };
+  const langBadge = langBadgeMap[song.language];
 
   return (
     <div
@@ -1127,8 +1136,11 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
 
         {/* Title + artist */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors">{song.title}</p>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">{song.artist}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className={`text-sm font-bold text-foreground truncate leading-tight group-hover:text-primary/90 transition-colors ${isML ? "font-[system-ui]" : ""}`}>{primaryTitle}</p>
+            {langBadge && <span className={`text-[9px] font-bold border rounded px-1.5 py-0.5 shrink-0 ${langBadge.cls}`}>{langBadge.label}</span>}
+          </div>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{secondaryLine}</p>
         </div>
 
         {/* Key badge + favorite */}
@@ -1150,6 +1162,7 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
         {song.time_signature && <span className="text-[10px] font-semibold bg-white/5 text-muted-foreground border border-white/8 rounded-full px-2.5 py-0.5">{song.time_signature}</span>}
         {Number(song.capo) > 0 && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Capo {song.capo}</span>}
         {song.chart_content && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Chart</span>}
+        {song.verified_status === "Verified" && <span className="text-[9px] font-bold bg-green-500/15 text-green-300 border border-green-500/25 rounded-full px-2 py-0.5">✓</span>}
       </div>
 
       {/* Arrangement sections */}
@@ -1485,8 +1498,8 @@ function MainApp({ onLogout }) {
                 </select>
               </div>
               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-                {["All", "★", "G", "A", "B", "C", "D", "E", "F"].map(k => (
-                  <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>{k}</button>
+                {["All", "★", "ML", "BI", "EN", "G", "A", "B", "C", "D", "E", "F"].map(k => (
+                  <button key={k} onClick={() => setSongKeyFilter(k)} className={`px-3 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${songKeyFilter === k ? "bg-primary text-primary-foreground shadow-md" : `bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/30 ${k === "ML" ? "hover:text-orange-300" : k === "BI" ? "hover:text-violet-300" : ""}`}`}>{k}</button>
                 ))}
               </div>
             </div>
@@ -1494,7 +1507,18 @@ function MainApp({ onLogout }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
-                return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
+                if (songKeyFilter === "ML") return s.language === "Malayalam";
+                if (songKeyFilter === "BI") return s.language === "Mixed";
+                if (songKeyFilter === "EN") return !s.language || s.language === "English";
+                const matchLang = songKeyFilter === "All" || s.key === songKeyFilter;
+                const q = songSearch.toLowerCase();
+                const matchSearch = !songSearch ||
+                  s.title?.toLowerCase().includes(q) ||
+                  s.malayalam_title?.toLowerCase().includes(q) ||
+                  s.transliteration_title?.toLowerCase().includes(q) ||
+                  s.artist?.toLowerCase().includes(q) ||
+                  (s.tags || []).some(t => t.toLowerCase().includes(q));
+                return matchSearch && matchLang;
               }).sort((a, b) => {
                 if (songSort === "title") return (a.title || "").localeCompare(b.title || "");
                 if (songSort === "artist") return (a.artist || "").localeCompare(b.artist || "");
@@ -1516,7 +1540,18 @@ function MainApp({ onLogout }) {
               ))}
               {songs.filter(s => {
                 if (songKeyFilter === "★") return s.is_favorite;
-                return (!songSearch || s.title?.toLowerCase().includes(songSearch.toLowerCase()) || s.artist?.toLowerCase().includes(songSearch.toLowerCase())) && (songKeyFilter === "All" || s.key === songKeyFilter);
+                if (songKeyFilter === "ML") return s.language === "Malayalam";
+                if (songKeyFilter === "BI") return s.language === "Mixed";
+                if (songKeyFilter === "EN") return !s.language || s.language === "English";
+                const matchLang = songKeyFilter === "All" || s.key === songKeyFilter;
+                const q = songSearch.toLowerCase();
+                const matchSearch = !songSearch ||
+                  s.title?.toLowerCase().includes(q) ||
+                  s.malayalam_title?.toLowerCase().includes(q) ||
+                  s.transliteration_title?.toLowerCase().includes(q) ||
+                  s.artist?.toLowerCase().includes(q) ||
+                  (s.tags || []).some(t => t.toLowerCase().includes(q));
+                return matchSearch && matchLang;
               }).length === 0 && songs.length > 0 && (
                 <div className="text-center py-12 text-muted-foreground col-span-full">
                   <Music className="w-10 h-10 mx-auto mb-3 opacity-30" />

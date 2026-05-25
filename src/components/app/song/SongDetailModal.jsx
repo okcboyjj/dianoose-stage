@@ -15,6 +15,7 @@ const ARRANGEMENT_SECTIONS = ['Intro', 'V1', 'Pre-Ch', 'Chorus', 'V2', 'Bridge',
 
 const TABS = [
   { id: 'details', label: 'Details', icon: null },
+  { id: 'malayalam', label: 'മലയാളം', icon: '🕊' },
   { id: 'chart', label: 'Chart', icon: '📄' },
   { id: 'lyrics', label: 'Lyrics', icon: '🎵' },
   { id: 'patches', label: 'Patches', icon: '🎛' },
@@ -51,6 +52,14 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
     artwork_url: song?.artwork_url || '',
     spotify_url: song?.spotify_url || '',
     lyrics: song?.lyrics || '',
+    language: song?.language || 'English',
+    malayalam_title: song?.malayalam_title || '',
+    transliteration_title: song?.transliteration_title || '',
+    malayalam_lyrics: song?.malayalam_lyrics || '',
+    transliteration_lyrics: song?.transliteration_lyrics || '',
+    source_notes: song?.source_notes || '',
+    verified_status: song?.verified_status || 'Unverified',
+    verified_by: song?.verified_by || '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -337,6 +346,72 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
                         placeholder="[Verse 1]&#10;G      Em&#10;You are here, moving in our midst&#10;C      D&#10;I worship You&#10;&#10;[Chorus]&#10;G   D   Em  C&#10;Way Maker..."
                         rows={10}
                         className="bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-y" />
+                    </div>
+                  </div>
+                )}
+
+                {tab === 'malayalam' && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Language</Label>
+                      <select value={form.language} onChange={e => set('language', e.target.value)} className="w-full bg-background/60 border border-white/10 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50">
+                        <option value="English">English</option>
+                        <option value="Malayalam">Malayalam</option>
+                        <option value="Mixed">Mixed / Bilingual</option>
+                      </select>
+                    </div>
+                    {(form.language === 'Malayalam' || form.language === 'Mixed') && (
+                      <>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">Malayalam Title (Unicode)</Label>
+                          <Input value={form.malayalam_title} onChange={e => set('malayalam_title', e.target.value)}
+                            placeholder="e.g. മാഞ്ഞുപോകാത്ത സ്നേഹം"
+                            className="bg-background/60 border-white/10 text-sm h-10" style={{ fontFamily: 'system-ui, sans-serif' }} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">Transliteration Title (English phonetic)</Label>
+                          <Input value={form.transliteration_title} onChange={e => set('transliteration_title', e.target.value)}
+                            placeholder="e.g. Manjupokatha Sneham"
+                            className="bg-background/60 border-white/10 text-sm h-10" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">Malayalam Lyrics (Unicode)</Label>
+                          <Textarea value={form.malayalam_lyrics} onChange={e => set('malayalam_lyrics', e.target.value)}
+                            placeholder={"[Verse 1]\nമഞ്ഞുതുള്ളി..."}
+                            rows={8}
+                            className="bg-background/60 border-white/10 text-sm leading-relaxed resize-y" style={{ fontFamily: 'system-ui, sans-serif' }} />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">Transliteration Lyrics</Label>
+                          <Textarea value={form.transliteration_lyrics} onChange={e => set('transliteration_lyrics', e.target.value)}
+                            placeholder={"[Verse 1]\nManjuthully..."}
+                            rows={8}
+                            className="bg-background/60 border-white/10 text-sm leading-relaxed resize-y" />
+                        </div>
+                      </>
+                    )}
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Source Notes</Label>
+                      <Textarea value={form.source_notes} onChange={e => set('source_notes', e.target.value)}
+                        placeholder="Album, composer, CCLI number, license info..."
+                        rows={3}
+                        className="bg-background/60 border-white/10 text-sm resize-none" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Verified Status</Label>
+                        <select value={form.verified_status} onChange={e => set('verified_status', e.target.value)} className="w-full bg-background/60 border border-white/10 text-foreground text-sm rounded-md px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/50">
+                          <option value="Unverified">Unverified</option>
+                          <option value="Needs Review">Needs Review</option>
+                          <option value="Verified">Verified</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground mb-1 block">Verified By</Label>
+                        <Input value={form.verified_by} onChange={e => set('verified_by', e.target.value)}
+                          placeholder="Name or email"
+                          className="bg-background/60 border-white/10 text-sm h-10" />
+                      </div>
                     </div>
                   </div>
                 )}

@@ -82,6 +82,54 @@
       "items": {
         "type": "string"
       }
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "English",
+        "Malayalam",
+        "Mixed"
+      ],
+      "default": "English",
+      "description": "Primary language of the song"
+    },
+    "malayalam_title": {
+      "type": "string",
+      "description": "Song title in Malayalam script"
+    },
+    "transliteration_title": {
+      "type": "string",
+      "description": "Malayalam title in English transliteration (e.g. Mangipokatha Sneham)"
+    },
+    "malayalam_lyrics": {
+      "type": "string",
+      "description": "Full lyrics in Malayalam script"
+    },
+    "transliteration_lyrics": {
+      "type": "string",
+      "description": "Full lyrics transliterated into English phonetic script"
+    },
+    "source_notes": {
+      "type": "string",
+      "description": "Source attribution, album, license info"
+    },
+    "verified_status": {
+      "type": "string",
+      "enum": [
+        "Unverified",
+        "Needs Review",
+        "Verified"
+      ],
+      "default": "Unverified",
+      "description": "Verification status of the song data"
+    },
+    "verified_by": {
+      "type": "string",
+      "description": "Name or email of the person who verified this song"
+    },
+    "verified_at": {
+      "type": "string",
+      "description": "ISO timestamp when song was verified"
     }
   },
   "required": [],

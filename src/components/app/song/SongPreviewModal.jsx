@@ -241,6 +241,7 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
   const [fontSize, setFontSize] = useState(13);
   const [activeChord, setActiveChord] = useState(null);
   const [chordView, setChordView] = useState('guitar');
+  const [mlDisplayMode, setMlDisplayMode] = useState('malayalam'); // 'malayalam' | 'transliteration' | 'both'
 
   useEffect(() => { setTab(initialTab); setActiveChord(null); setSemitones(0); }, [song?.id]);
 
@@ -287,10 +288,14 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
 
   const hasChart = !!song?.chart_content?.trim();
   const hasLyrics = !!song?.lyrics?.trim();
+  const hasMLLyrics = !!song?.malayalam_lyrics?.trim();
+  const hasTranslitLyrics = !!song?.transliteration_lyrics?.trim();
+  const isML = song?.language === 'Malayalam' || song?.language === 'Mixed';
   const isSpotifyImport = !!song?.spotify_url;
 
   const TABS = [
     { id: 'chart', label: hasChart ? '📄 Chart' : hasLyrics ? '🎵 Lyrics' : '📄 Chart' },
+    ...(isML ? [{ id: 'mllyrics', label: '🕊 Malayalam' }] : []),
     { id: 'chords', label: '🎸 Chords' },
     { id: 'patches', label: '🎛 Patches' },
     { id: 'prod', label: '🎬 Prod' },
@@ -337,8 +342,16 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
 
             {/* Title / artist */}
             <div className="flex-1 min-w-0 pt-1">
-              <h2 className="text-lg font-bold text-foreground leading-tight truncate">{song?.title || 'Untitled'}</h2>
-              <p className="text-sm text-muted-foreground mt-0.5 truncate">{song?.artist}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-foreground leading-tight truncate" style={(song?.language === 'Malayalam') ? { fontFamily: 'system-ui, sans-serif' } : {}}>
+                  {(song?.language === 'Malayalam' && song?.malayalam_title) ? song.malayalam_title : (song?.title || 'Untitled')}
+                </h2>
+                {song?.language === 'Malayalam' && <span className="text-[9px] font-bold bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded px-1.5 py-0.5 shrink-0">ML</span>}
+                {song?.language === 'Mixed' && <span className="text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/25 rounded px-1.5 py-0.5 shrink-0">BI</span>}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5 truncate">
+                {isML && song?.transliteration_title ? song.transliteration_title : (song?.artist || '')}
+              </p>
               {/* Meta pills */}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {song?.key && <span className="text-[10px] font-bold bg-primary/20 text-primary border border-primary/30 rounded-full px-2.5 py-0.5">Key: {song.key}</span>}
@@ -505,6 +518,57 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                             {isSpotifyImport ? 'Add Chart or Lyrics →' : 'Open Editor →'}
                           </button>
                         )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ── MALAYALAM LYRICS TAB ── */}
+                {tab === 'mllyrics' && (
+                  <div className="space-y-3">
+                    {/* Display mode toggle */}
+                    {hasMLLyrics && hasTranslitLyrics && (
+                      <div className="flex bg-white/5 rounded-xl p-1 border border-white/8 w-fit">
+                        {[{ id: 'malayalam', label: 'മലയാളം' }, { id: 'transliteration', label: 'Transliteration' }, { id: 'both', label: 'Both' }].map(m => (
+                          <button key={m.id} onClick={() => setMlDisplayMode(m.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mlDisplayMode === m.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!hasMLLyrics && !hasTranslitLyrics && (
+                      <p className="text-sm text-muted-foreground text-center py-8 italic">No Malayalam lyrics added yet. Use Edit to add them.</p>
+                    )}
+
+                    {/* Malayalam script */}
+                    {(mlDisplayMode === 'malayalam' || mlDisplayMode === 'both') && hasMLLyrics && (
+                      <div className="bg-black/30 border border-white/8 rounded-xl p-4 overflow-y-auto max-h-[50vh]">
+                        {mlDisplayMode === 'both' && <p className="text-[9px] uppercase tracking-widest text-orange-400 font-bold mb-2">Malayalam</p>}
+                        <div className="space-y-0 leading-loose" style={{ fontFamily: 'system-ui, sans-serif' }}>
+                          {song.malayalam_lyrics.split('\n').map((line, i) => {
+                            if (line.trim() === '') return <div key={i} className="h-3" />;
+                            const isSection = /^\[.+\]$/.test(line.trim()) || /^[\w\s]+:$/.test(line.trim());
+                            if (isSection) return <p key={i} className="text-primary font-bold text-sm mt-4 mb-1 first:mt-0">{line}</p>;
+                            return <p key={i} className="text-foreground/90 text-sm leading-relaxed" style={{ fontSize }}>{line}</p>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Transliteration */}
+                    {(mlDisplayMode === 'transliteration' || mlDisplayMode === 'both') && hasTranslitLyrics && (
+                      <div className="bg-black/30 border border-white/8 rounded-xl p-4 overflow-y-auto max-h-[50vh]">
+                        {mlDisplayMode === 'both' && <p className="text-[9px] uppercase tracking-widest text-violet-400 font-bold mb-2">Transliteration</p>}
+                        <div className="space-y-0 leading-loose">
+                          {song.transliteration_lyrics.split('\n').map((line, i) => {
+                            if (line.trim() === '') return <div key={i} className="h-3" />;
+                            const isSection = /^\[.+\]$/.test(line.trim()) || /^[\w\s]+:$/.test(line.trim());
+                            if (isSection) return <p key={i} className="text-primary font-bold text-sm mt-4 mb-1 first:mt-0">{line}</p>;
+                            return <p key={i} className="text-foreground/90 text-sm leading-relaxed" style={{ fontSize }}>{line}</p>;
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
