@@ -1,8 +1,9 @@
 import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Trash2, Loader2, ScanLine } from "lucide-react";
+import { X, Save, Trash2, Loader2, ScanLine, ClipboardPaste } from "lucide-react";
 const ChartBuilderModal = lazy(() => import("./ChartBuilderModal"));
 const OCRImportModal = lazy(() => import("./OCRImportModal"));
+const PasteChartModal = lazy(() => import("./PasteChartModal"));
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
   const [showAddSection, setShowAddSection] = useState(false);
   const [showChartBuilder, setShowChartBuilder] = useState(false);
   const [showOCR, setShowOCR] = useState(false);
+  const [showPaste, setShowPaste] = useState(false);
 
   const [form, setForm] = useState({
     title: song?.title || '',
@@ -336,6 +338,12 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
                           <ScanLine className="w-3.5 h-3.5" /> Scan Chart
                         </button>
                         <button
+                          onClick={() => setShowPaste(true)}
+                          className="flex items-center gap-1.5 text-xs font-bold text-foreground bg-white/8 border border-white/15 rounded-lg px-3 py-1.5 hover:bg-white/12 transition-colors"
+                        >
+                          <ClipboardPaste className="w-3.5 h-3.5" /> Paste Chart
+                        </button>
+                        <button
                           onClick={() => setShowChartBuilder(true)}
                           className="flex items-center gap-1.5 text-xs font-bold text-primary-foreground bg-primary rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors"
                         >
@@ -526,6 +534,19 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
             onClose={() => setShowOCR(false)}
             onSaved={(type) => {
               setShowOCR(false);
+              if (type === 'existing') onSave();
+            }}
+          />
+        </Suspense>
+      )}
+      {showPaste && (
+        <Suspense fallback={null}>
+          <PasteChartModal
+            existingSong={{ ...song, ...form }}
+            churchId={churchId}
+            onClose={() => setShowPaste(false)}
+            onSaved={(type) => {
+              setShowPaste(false);
               if (type === 'existing') onSave();
             }}
           />

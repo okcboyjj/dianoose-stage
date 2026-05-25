@@ -9,10 +9,18 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    // Step 1: Extract chart structure — lyrics are Manglish (Malayalam phonetic in English)
+    // Step 1: Extract chart structure with smart language detection
     const mainPrompt = `You are a worship chart OCR specialist. Extract ALL content from this worship chart image.
 
-The lyrics are written in Manglish — Malayalam words phonetically written in English letters (e.g. "Njan ninne sthuthikkum", "Yeshu entae daivam").
+LANGUAGE DETECTION — critically important:
+First, detect what language(s) the lyrics are written in:
+- "English": lyrics are standard English words
+- "Malayalam": lyrics are Malayalam Unicode script (ക, ത, etc.)
+- "Manglish": Malayalam words phonetically written in English letters (e.g. "Njan ninne sthuthikkum", "Yeshu entae daivam")
+- "Mixed": contains both English and Malayalam/Manglish sections
+
+Set the "detected_language_type" field to one of: "English", "Malayalam", "Manglish", "Mixed"
+Set the "language" field to: "English" for English, "Malayalam" for Malayalam/Manglish/Mixed
 
 Return a JSON object with:
 - title: string or null
@@ -21,9 +29,10 @@ Return a JSON object with:
 - bpm: number or null
 - capo: number or null
 - time_signature: string (e.g. "4/4") or null
-- language: "Malayalam"
-- lyrics: string — full Manglish lyrics without chords, sections separated by blank lines
-- confidence_notes: string — any OCR issues
+- language: "English" or "Malayalam"
+- detected_language_type: "English", "Malayalam", "Manglish", or "Mixed"
+- lyrics: string — full lyrics without chords, sections separated by blank lines
+- confidence_notes: string — any OCR issues, uncertain content, or language detection notes
 - sections: array of section objects in order:
     {
       name: string,
@@ -34,16 +43,18 @@ Return a JSON object with:
         }
       ]
     }
-  Each line has the Manglish lyric text AND any chords mapped to word positions (0 = first word).
+  Each line has the lyric text AND any chords mapped to word positions (0 = first word).
   chord is the exact symbol (G, D/F#, F#m7, Bb, Em7, Asus2 etc.).
   If a line has no chords, chords = [].
 
 Rules:
-- Never fabricate content — only extract what is visible
+- NEVER fabricate content — only extract what is visible in the image
 - Section names go in name field, NOT in lyric text
 - Handwritten chords ALWAYS override any printed chord beneath them
 - Nashville numbers (1, 4, 5, 6m) are valid chords
-- Slash chords like G/B are one chord symbol`;
+- Slash chords like G/B are one chord symbol
+- If lyrics are already Malayalam Unicode, preserve them exactly as-is
+- If lyrics are English, do NOT add Malayalam fields`;
 
     const mainResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: mainPrompt,
@@ -59,6 +70,7 @@ Rules:
           capo: { type: "number" },
           time_signature: { type: "string" },
           language: { type: "string" },
+          detected_language_type: { type: "string" },
           lyrics: { type: "string" },
           confidence_notes: { type: "string" },
           sections: {
@@ -93,83 +105,94 @@ Rules:
       }
     });
 
-    // Step 2: Convert extracted Manglish lyrics directly into Malayalam Unicode script
-    const manglishLyrics = mainResult.lyrics || '';
-    const malayalamResult = manglishLyrics ? await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `You are a Manglish to Malayalam script converter for Christian worship songs.
+    const detectedType = mainResult.detected_language_type || 'English';
+
+    // Step 2: Only run Malayalam conversion if lyrics are Manglish
+    // - English: skip
+    // - Malayalam Unicode: skip (already correct)
+    // - Manglish: convert to Unicode, keep original as transliteration
+    // - Mixed: convert Manglish portions only
+    const rawLyrics = mainResult.lyrics || '';
+    let malayalamResult = null;
+
+    if (rawLyrics && (detectedType === 'Manglish' || detectedType === 'Mixed')) {
+      const conversionPrompt = detectedType === 'Manglish'
+        ? `You are a Manglish to Malayalam script converter for Christian worship songs.
 
 The following lyrics are written in Manglish (Malayalam phonetics in English letters). Convert them directly into proper Malayalam Unicode script. Do NOT translate — just convert the phonetics to script.
 
 Preserve all section labels (Verse 1, Chorus, Bridge etc.) and line breaks exactly.
 
 Manglish lyrics:
-${manglishLyrics}
+${rawLyrics}
 
 Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }
 - transliteration_lyrics = the original Manglish text (copy it as-is)
-- malayalam_lyrics = the Malayalam Unicode script version`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          malayalam_lyrics: { type: "string" },
-          transliteration_lyrics: { type: "string" }
-        }
-      }
-    }).catch(() => null) : null;
+- malayalam_lyrics = the Malayalam Unicode script version`
+        : `You are a Malayalam/English mixed text processor for Christian worship songs.
 
-    // Use mainResult as pass1, build flat lyricLines for chart builder
-    const pass1 = mainResult;
-    const lyricLines = [];
-    for (const section of (pass1.sections || [])) {
-      for (let li = 0; li < (section.lines || []).length; li++) {
-        lyricLines.push({ section: section.name, line_idx: li, lyric: section.lines[li].lyric });
-      }
+The following lyrics contain both English and Manglish (Malayalam phonetics in English letters) sections.
+- Convert any Manglish portions to Malayalam Unicode script.
+- Keep English portions as-is in the transliteration field.
+- Preserve all section labels and line breaks exactly.
+
+Lyrics:
+${rawLyrics}
+
+Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }
+- transliteration_lyrics = original text with English kept as-is
+- malayalam_lyrics = Manglish converted to Unicode, English kept as-is`;
+
+      malayalamResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: conversionPrompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            malayalam_lyrics: { type: "string" },
+            transliteration_lyrics: { type: "string" }
+          }
+        }
+      }).catch(() => null);
     }
 
-    // Build chord_maps from the inline chords in sections
-    const inlineChordMaps = [];
+    // Build chart content from sections
+    const pass1 = mainResult;
+    const chordMaps = [];
     let lineIdx = 0;
     for (const section of (pass1.sections || [])) {
       for (const line of (section.lines || [])) {
         for (const c of (line.chords || [])) {
-          inlineChordMaps.push({ line_index: lineIdx, chord: c.chord, word_index: c.word_index });
+          chordMaps.push({ line_index: lineIdx, chord: c.chord, word_index: c.word_index });
         }
         lineIdx++;
       }
     }
-    const pass2 = { chord_maps: inlineChordMaps };
 
-    // ── Reconstruct chart_content from structured chord+lyric data ────────────
-    function buildChartContent(sections, lyricLines, chordMaps) {
-      // Group chord maps by line index
+    function buildChartContent(sections, allChordMaps) {
       const chordsByLine = {};
-      for (const cm of (chordMaps || [])) {
+      for (const cm of (allChordMaps || [])) {
         if (!chordsByLine[cm.line_index]) chordsByLine[cm.line_index] = [];
         chordsByLine[cm.line_index].push(cm);
       }
 
-      let lineIdx = 0;
+      let li = 0;
       let chart = '';
       for (const section of (sections || [])) {
         chart += `[${section.name}]\n`;
         for (const lineObj of (section.lines || [])) {
           const lyric = lineObj.lyric || '';
-          const chords = chordsByLine[lineIdx] || [];
+          const chords = chordsByLine[li] || [];
 
           if (chords.length === 0) {
             chart += lyric + '\n';
           } else {
-            // Build a chord line aligned to word positions in the lyric
             const words = lyric.split(' ');
-            // Compute character offset of each word start
             const wordOffsets = [];
             let offset = 0;
             for (const w of words) {
               wordOffsets.push(offset);
-              offset += w.length + 1; // +1 for space
+              offset += w.length + 1;
             }
-
-            // Place chords at word offsets
             let chordLine = '';
             const sortedChords = [...chords].sort((a, b) => a.word_index - b.word_index);
             for (const cm of sortedChords) {
@@ -180,29 +203,36 @@ Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }
             chart += chordLine.trimEnd() + '\n';
             chart += lyric + '\n';
           }
-          lineIdx++;
+          li++;
         }
         chart += '\n';
       }
       return chart.trim();
     }
 
-    const chart_content = buildChartContent(pass1.sections, lyricLines, pass2.chord_maps);
+    const chart_content = buildChartContent(pass1.sections, chordMaps);
 
-    // Merge Malayalam — prefer dedicated translation pass, fallback to main extraction
-    const finalMalayalam = (malayalamResult?.malayalam_lyrics && malayalamResult.malayalam_lyrics.trim())
-      ? malayalamResult.malayalam_lyrics
-      : (mainResult.malayalam_lyrics || '');
-    const finalTranslit = (malayalamResult?.transliteration_lyrics && malayalamResult.transliteration_lyrics.trim())
-      ? malayalamResult.transliteration_lyrics
-      : (mainResult.transliteration_lyrics || '');
+    // Resolve final Malayalam fields based on detected language
+    let finalMalayalam = '';
+    let finalTranslit = '';
+
+    if (detectedType === 'Malayalam') {
+      // Already Unicode — use as-is
+      finalMalayalam = rawLyrics;
+      finalTranslit = '';
+    } else if (detectedType === 'Manglish' || detectedType === 'Mixed') {
+      finalMalayalam = (malayalamResult?.malayalam_lyrics || '').trim() || '';
+      finalTranslit = (malayalamResult?.transliteration_lyrics || '').trim() || rawLyrics;
+    }
+    // English: leave both empty
 
     const result = {
       ...mainResult,
       chart_content,
       malayalam_lyrics: finalMalayalam,
       transliteration_lyrics: finalTranslit,
-      source_type: 'OCR Import'
+      source_type: 'OCR Import',
+      import_date: new Date().toISOString(),
     };
 
     return Response.json({ success: true, data: result });

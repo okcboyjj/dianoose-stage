@@ -201,10 +201,10 @@ function ProcessingStep({ fileName }) {
 }
 
 // ── Step 3: Review ────────────────────────────────────────────────────────────
-function ReviewStep({ fileUrl, fileIsPdf, extracted, onDataChange, onSaveNew, onSaveToExisting, onCancel, saving, existingSong }) {
+function ReviewStep({ fileUrl, fileIsPdf, extracted, onDataChange, onSaveNew, onSaveToExisting, onCancel, saving, existingSong, fileName }) {
   const [history, setHistory] = useState([extracted]);
   const [idx, setIdx] = useState(0);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true); // auto-open after OCR
   const d = history[idx];
 
   const set = (k, v) => {
@@ -351,10 +351,15 @@ function ReviewStep({ fileUrl, fileIsPdf, extracted, onDataChange, onSaveNew, on
         </div>
       </div>
 
-      {/* Source badge note */}
-      <div className="flex items-center gap-2 bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
-        <span className="text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded px-2 py-0.5 uppercase tracking-wide">OCR Import</span>
-        <p className="text-[11px] text-muted-foreground">Will be saved as <span className="text-amber-400 font-bold">Needs Review</span> · Not verified</p>
+      {/* Source info */}
+      <div className="bg-white/4 border border-white/8 rounded-xl px-4 py-3 space-y-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded px-2 py-0.5 uppercase tracking-wide">OCR Scan</span>
+          <span className="text-[9px] font-bold bg-white/8 text-muted-foreground border border-white/10 rounded px-2 py-0.5 uppercase tracking-wide">Base44 AI Scan</span>
+          <p className="text-[11px] text-muted-foreground">Saved as <span className="text-amber-400 font-bold">Needs Review</span></p>
+        </div>
+        {fileName && <p className="text-[10px] text-muted-foreground/60 truncate">📄 {fileName}</p>}
+        <p className="text-[10px] text-muted-foreground/50">Imported {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
       </div>
 
       {/* Actions */}
@@ -406,7 +411,13 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
       // Always default to Needs Review
       data.verified_status = 'Needs Review';
       data.source_type = 'OCR Import';
-      data.source_notes = (data.source_notes || '') + `\nOCR imported from: ${file.name}`;
+      const importDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      data.source_notes = [
+        `OCR Scan · Base44 AI Scan · ${importDate}`,
+        `File: ${file.name}`,
+        data.confidence_notes ? `Notes: ${data.confidence_notes}` : null,
+        data.source_notes || null,
+      ].filter(Boolean).join('\n');
 
       setExtracted(data);
       setReviewData(data);
@@ -553,6 +564,7 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
                 onCancel={onClose}
                 saving={saving}
                 existingSong={existingSong}
+                fileName={fileName}
               />
             )}
             {step === 'done' && (
