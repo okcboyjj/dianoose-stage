@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 const CameraCapture = lazy(() => import("./CameraCapture"));
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, FileImage, AlertTriangle, CheckCircle2, Plus, FileText, Camera } from "lucide-react";
+import { X, Loader2, FileImage, AlertTriangle, CheckCircle2, Plus, FileText, Camera, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
+import ChartViewer from "./ChartViewer";
 
 const ACCEPTED = "image/jpeg,image/png,image/webp,image/gif,image/heic,application/pdf";
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'application/pdf'];
 
 // ── Step 1: Upload ────────────────────────────────────────────────────────────
 function UploadStep({ onFileSelected, uploading }) {
@@ -17,8 +20,18 @@ function UploadStep({ onFileSelected, uploading }) {
   const [dragging, setDragging] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
 
+  const [validationError, setValidationError] = useState(null);
   const handleFile = (file) => {
     if (!file) return;
+    setValidationError(null);
+    if (!VALID_TYPES.includes(file.type)) {
+      setValidationError(`Unsupported file type: ${file.type || 'unknown'}. Please upload a JPG, PNG, WEBP, or PDF.`);
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setValidationError(`File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum is 20 MB.`);
+      return;
+    }
     onFileSelected(file);
   };
 
@@ -69,6 +82,13 @@ function UploadStep({ onFileSelected, uploading }) {
         )}
       </div>
 
+      {validationError && (
+        <div className="flex items-start gap-2 bg-destructive/15 border border-destructive/30 rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+          <p className="text-[11px] text-destructive leading-relaxed">{validationError}</p>
+        </div>
+      )}
+
       <input ref={inputRef} type="file" accept={ACCEPTED} className="hidden"
         onChange={e => handleFile(e.target.files[0])} />
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
@@ -100,7 +120,7 @@ function UploadStep({ onFileSelected, uploading }) {
 const SCAN_STEPS = [
   { label: "Scanning chart & extracting lyrics..." },
   { label: "Mapping chord positions..." },
-  { label: "Generating Malayalam translation..." },
+  { label: "Processing Malayalam text..." },
   { label: "Building chart..." },
 ];
 
@@ -181,9 +201,10 @@ function ProcessingStep({ fileName }) {
 }
 
 // ── Step 3: Review ────────────────────────────────────────────────────────────
-function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExisting, onCancel, saving }) {
+function ReviewStep({ fileUrl, fileIsPdf, extracted, onDataChange, onSaveNew, onSaveToExisting, onCancel, saving, existingSong }) {
   const [history, setHistory] = useState([extracted]);
   const [idx, setIdx] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
   const d = history[idx];
 
   const set = (k, v) => {
@@ -225,9 +246,20 @@ function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExist
         {fileUrl && (
           <div>
             <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-1.5">Original Scan</p>
-            <div className="bg-black/40 border border-white/8 rounded-xl overflow-hidden max-h-48">
-              <img src={fileUrl} alt="Uploaded scan" className="w-full object-contain max-h-48" />
-            </div>
+            {fileIsPdf ? (
+              <div className="bg-black/40 border border-white/8 rounded-xl overflow-hidden">
+                <iframe src={fileUrl} title="PDF Preview" className="w-full h-48 border-0" />
+              </div>
+            ) : (
+              <div className="bg-black/40 border border-white/8 rounded-xl overflow-hidden max-h-48">
+                <img src={fileUrl} alt="Uploaded scan" className="w-full object-contain max-h-48"
+                  onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                />
+                <div className="hidden items-center justify-center h-24 text-muted-foreground text-xs">
+                  <FileText className="w-5 h-5 mr-2" /> Preview unavailable
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -283,9 +315,21 @@ function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExist
           </div>
 
           <div>
-            <Label className="text-xs text-muted-foreground mb-1 block">Chart Content (chords + lyrics)</Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label className="text-xs text-muted-foreground">Chart Content (chords + lyrics)</Label>
+              <button onClick={() => setShowPreview(p => !p)}
+                className="flex items-center gap-1 text-[11px] text-primary/80 hover:text-primary transition-colors">
+                {showPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                {showPreview ? 'Hide Preview' : 'Preview Chart'}
+              </button>
+            </div>
+            {showPreview && d.chart_content ? (
+              <div className="mb-2">
+                <ChartViewer song={d} />
+              </div>
+            ) : null}
             <Textarea value={d.chart_content || ''} onChange={e => set('chart_content', e.target.value)}
-              rows={10} className="bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-y" />
+              rows={showPreview ? 6 : 10} className="bg-background/60 border-white/10 text-sm font-mono leading-relaxed resize-y" />
           </div>
 
           {(d.language === 'Malayalam' || d.malayalam_lyrics) && (
@@ -317,10 +361,12 @@ function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExist
       <div className="flex gap-2 pt-1">
         <Button variant="ghost" onClick={onCancel} className="text-muted-foreground text-sm h-9">Cancel</Button>
         <div className="flex-1" />
-        <Button onClick={onSaveToExisting} disabled={saving}
-          className="bg-secondary text-foreground border border-white/10 hover:bg-secondary/80 h-9 text-sm font-semibold">
-          {saving === 'existing' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save to Existing Song'}
-        </Button>
+        {existingSong?.id && (
+          <Button onClick={onSaveToExisting} disabled={saving}
+            className="bg-secondary text-foreground border border-white/10 hover:bg-secondary/80 h-9 text-sm font-semibold">
+            {saving === 'existing' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save to Existing Song'}
+          </Button>
+        )}
         <Button onClick={onSaveNew} disabled={saving}
           className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-semibold shadow-lg shadow-primary/20">
           {saving === 'new' ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-3.5 h-3.5 mr-1" />Create New Song</>}
@@ -335,6 +381,7 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
   const [step, setStep] = useState('upload'); // upload | processing | review | done
   const [uploading, setUploading] = useState(false);
   const [fileUrl, setFileUrl] = useState(null);
+  const [fileIsPdf, setFileIsPdf] = useState(false);
   const [fileName, setFileName] = useState('');
   const [extracted, setExtracted] = useState(null);
   const [reviewData, setReviewData] = useState(null);
@@ -345,6 +392,7 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
     setUploading(true);
     setError(null);
     setFileName(file.name);
+    setFileIsPdf(file.type === 'application/pdf');
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setFileUrl(file_url);
@@ -497,12 +545,14 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
             {step === 'review' && extracted && (
               <ReviewStep
                 fileUrl={fileUrl}
+                fileIsPdf={fileIsPdf}
                 extracted={extracted}
                 onDataChange={setReviewData}
                 onSaveNew={handleSaveNew}
                 onSaveToExisting={handleSaveToExisting}
                 onCancel={onClose}
                 saving={saving}
+                existingSong={existingSong}
               />
             )}
             {step === 'done' && (
