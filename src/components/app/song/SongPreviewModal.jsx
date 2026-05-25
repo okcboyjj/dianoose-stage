@@ -4,7 +4,7 @@ import { X, Music } from "lucide-react";
 import { transposeFullChart, chartToNashville, ALL_KEYS_SHARP, ALL_KEYS_FLAT, suggestCapo } from "./ChordTransposer";
 
 // ── Chord extraction from chart ───────────────────────────────────────────────
-const CHORD_REGEX = /\b([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11)?(?:\/[A-G][b#]?)?)\b/g;
+const CHORD_REGEX = /(?<![A-Za-z#b])([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11)?(?:\/[A-G][b#]?)?)(?![A-Za-z#])/g;
 
 function isChordLine(line) {
   const trimmed = line.trim();
