@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    // ── Pass 1: Extract lyrics, structure, and metadata ──────────────────────
+    // ── Pass 1 + Malayalam translation run in PARALLEL ───────────────────────
     const pass1Prompt = `You are a worship chart OCR specialist. Extract the LYRICS and STRUCTURE from this worship chart image — do NOT try to map chords yet.
 
 Return a JSON object:
@@ -27,48 +27,76 @@ Return a JSON object:
 - transliteration_lyrics: string — English phonetic transliteration of Malayalam if present, else null
 - lyrics: string — full English lyrics without chords, sections separated by blank lines
 - confidence_notes: string — any issues, unclear text, handwriting etc.
-- source_type: "OCR Import"
 
 Rules:
 - Never fabricate content
 - Preserve Malayalam Unicode exactly
 - Section names go in the name field, NOT in the lyric lines`;
 
-    const pass1 = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: pass1Prompt,
-      model: "gpt_5_4",
-      file_urls: [file_url],
-      response_json_schema: {
-        type: "object",
-        properties: {
-          title: { type: "string" },
-          artist: { type: "string" },
-          key: { type: "string" },
-          bpm: { type: "number" },
-          capo: { type: "number" },
-          time_signature: { type: "string" },
-          language: { type: "string" },
-          sections: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                lines: { type: "array", items: { type: "object", properties: { lyric: { type: "string" } } } }
-              }
-            }
-          },
-          malayalam_lyrics: { type: "string" },
-          transliteration_lyrics: { type: "string" },
-          lyrics: { type: "string" },
-          confidence_notes: { type: "string" },
-          source_type: { type: "string" }
-        }
-      }
-    });
+    const malayalamPromptFromImage = `You are a Malayalam translation and transliteration specialist for Christian worship songs.
 
-    // ── Pass 2: Map each chord to the word/syllable it sits above ─────────────
-    // Build a flat list of all lyric lines with section+line index for the prompt
+Look at this worship chart image. Extract the English lyrics (ignoring chord symbols), then produce:
+1. A faithful Malayalam translation in proper Malayalam Unicode script
+2. An English phonetic transliteration of that Malayalam translation
+
+Rules:
+- Preserve the section structure (Verse 1, Chorus, Bridge etc.)
+- Keep the same number of lines per section
+- The translation should be singable and spiritually accurate
+- If the chart is already in Malayalam, extract it directly instead of translating
+
+Return JSON with:
+- malayalam_lyrics: full Malayalam Unicode translation
+- transliteration_lyrics: English phonetic transliteration`;
+
+    // Run Pass 1 and Malayalam translation concurrently
+    const [pass1, malayalamResult] = await Promise.all([
+      base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: pass1Prompt,
+        model: "gpt_5_4",
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            artist: { type: "string" },
+            key: { type: "string" },
+            bpm: { type: "number" },
+            capo: { type: "number" },
+            time_signature: { type: "string" },
+            language: { type: "string" },
+            sections: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  lines: { type: "array", items: { type: "object", properties: { lyric: { type: "string" } } } }
+                }
+              }
+            },
+            malayalam_lyrics: { type: "string" },
+            transliteration_lyrics: { type: "string" },
+            lyrics: { type: "string" },
+            confidence_notes: { type: "string" }
+          }
+        }
+      }),
+      base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: malayalamPromptFromImage,
+        model: "gpt_5_4",
+        file_urls: [file_url],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            malayalam_lyrics: { type: "string" },
+            transliteration_lyrics: { type: "string" }
+          }
+        }
+      }).catch(() => null) // non-fatal
+    ]);
+
+    // ── Pass 2: Map chords — runs after Pass 1 (needs lyric lines) ────────────
     const lyricLines = [];
     for (const section of (pass1.sections || [])) {
       for (let li = 0; li < (section.lines || []).length; li++) {
@@ -78,24 +106,23 @@ Rules:
 
     const pass2Prompt = `You are a chord-mapping specialist for worship charts.
 
-I have already extracted the clean lyrics from this worship chart image. Your ONLY job is to identify the CHORDS and map each chord to which word (or syllable) in the lyric it sits above.
+I have already extracted the clean lyrics from this worship chart image. Your ONLY job is to identify the CHORDS and map each chord to which word in the lyric it sits above.
 
 Here are the lyric lines, in order:
 ${lyricLines.map((l, i) => `[${i}] (${l.section}) ${l.lyric}`).join('\n')}
 
-Look at the image and for each chord symbol you see, record:
+For each chord symbol visible in the image, record:
 - line_index: the [number] of the lyric line it belongs to
 - chord: the chord symbol exactly as written (e.g. G, D/F#, F#m7, Asus2, Cadd9, Bb, Em7)
 - word_index: which word in the lyric line the chord sits above (0 = first word)
-- syllable_hint: optional — if the chord is mid-word, which syllable (e.g. "sec" for "second")
 
 IMPORTANT:
-- Handwritten chords in pen/pencil ALWAYS override any printed chord beneath them
+- Handwritten chords ALWAYS override any printed chord beneath them
 - Nashville numbers (1, 4, 5, 6m etc.) are valid chords — include them
 - Slash chords like G/B, D/F# are a single chord — preserve exactly
-- If a chord sits between two words, pick the word it is closest to
+- If a chord sits between two words, pick the closest word
 - Do NOT invent chords not visible in the image
-- If there are no chords in the image, return an empty chord_maps array`;
+- If no chords exist, return empty chord_maps array`;
 
     const pass2 = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: pass2Prompt,
@@ -111,8 +138,7 @@ IMPORTANT:
               properties: {
                 line_index: { type: "number" },
                 chord: { type: "string" },
-                word_index: { type: "number" },
-                syllable_hint: { type: "string" }
+                word_index: { type: "number" }
               }
             }
           }
@@ -170,9 +196,19 @@ IMPORTANT:
 
     const chart_content = buildChartContent(pass1.sections, lyricLines, pass2.chord_maps);
 
+    // Merge Malayalam — prefer dedicated translation pass, fallback to pass1 extraction
+    const finalMalayalam = (malayalamResult?.malayalam_lyrics && malayalamResult.malayalam_lyrics.trim())
+      ? malayalamResult.malayalam_lyrics
+      : (pass1.malayalam_lyrics || '');
+    const finalTranslit = (malayalamResult?.transliteration_lyrics && malayalamResult.transliteration_lyrics.trim())
+      ? malayalamResult.transliteration_lyrics
+      : (pass1.transliteration_lyrics || '');
+
     const result = {
       ...pass1,
       chart_content,
+      malayalam_lyrics: finalMalayalam,
+      transliteration_lyrics: finalTranslit,
       source_type: 'OCR Import'
     };
 

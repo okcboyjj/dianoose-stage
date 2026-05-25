@@ -100,7 +100,7 @@ function UploadStep({ onFileSelected, uploading }) {
 // ── Step 2: Processing ────────────────────────────────────────────────────────
 const SCAN_STEPS = [
   { label: "Extracting lyrics & sections..." },
-  { label: "Mapping chord positions (pass 2)..." },
+  { label: "Mapping chord positions..." },
   { label: "Building chart..." },
   { label: "Generating Malayalam translation..." },
 ];
@@ -110,9 +110,9 @@ function ProcessingStep({ fileName }) {
   const [stepIdx, setStepIdx] = useState(0);
 
   useEffect(() => {
-    // Phase 1: 0 → 88% over ~42s (two LLM passes + Malayalam = ~40-50s real time)
+    // Phase 1: 0 → 88% over ~28s (pass1+Malayalam parallel ~15s, then pass2 ~15s)
     // Phase 2: 88 → 96% very slowly (waiting for completion)
-    const PHASE1_MS = 42000;
+    const PHASE1_MS = 28000;
     const PHASE1_TARGET = 88;
     const interval = 200;
     let elapsed = 0;
@@ -348,42 +348,6 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
       const res = await ocrChartImport({ file_url });
       const data = res?.data?.data || res?.data?.response || res?.data;
       if (!data) throw new Error('OCR returned no data');
-
-      // Auto-generate Malayalam lyrics if English lyrics were extracted and no Malayalam present
-      const lyricsSource = data.lyrics || data.chart_content;
-      if (lyricsSource && !data.malayalam_lyrics) {
-        try {
-          const mlRes = await base44.integrations.Core.InvokeLLM({
-            prompt: `You are a Malayalam translation and transliteration specialist for Christian worship songs.
-
-Given the following English worship song lyrics, produce:
-1. A faithful Malayalam translation (in proper Malayalam Unicode script)
-2. An English phonetic transliteration of that Malayalam translation
-
-Rules:
-- Preserve the section structure (Verse 1, Chorus, Bridge etc.)
-- Keep the same number of lines per section
-- The translation should be singable and spiritually accurate
-- Do not add or remove sections
-
-Lyrics:
-${lyricsSource}`,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                malayalam_lyrics: { type: "string" },
-                transliteration_lyrics: { type: "string" }
-              }
-            }
-          });
-          if (mlRes?.malayalam_lyrics) {
-            data.malayalam_lyrics = mlRes.malayalam_lyrics;
-            data.transliteration_lyrics = mlRes.transliteration_lyrics || '';
-          }
-        } catch (_) {
-          // Non-fatal — OCR data still usable without Malayalam
-        }
-      }
 
       // Always default to Needs Review
       data.verified_status = 'Needs Review';
