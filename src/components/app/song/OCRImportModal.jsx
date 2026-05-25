@@ -290,7 +290,7 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
       setStep('processing');
 
       const res = await ocrChartImport({ file_url });
-      const data = res?.data?.data || res?.data;
+      const data = res?.data?.data || res?.data?.response || res?.data;
       if (!data) throw new Error('OCR returned no data');
 
       // Always default to Needs Review

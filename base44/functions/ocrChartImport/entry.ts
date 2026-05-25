@@ -9,39 +9,55 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    const prompt = `You are a worship chart OCR extraction specialist. Analyze this image of a worship song chart or lyrics sheet.
+    const prompt = `You are a worship chart OCR specialist. Your PRIMARY job is to extract chord charts with PIXEL-PERFECT chord placement above lyrics.
 
-Extract ALL content carefully, preserving the exact structure. Return a JSON object with these fields:
+## CHORD PLACEMENT — THIS IS THE MOST IMPORTANT RULE
+Chords in a worship chart float ABOVE lyrics at the exact horizontal position where they are played.
+You MUST reproduce this using spaces so the chord aligns with the correct syllable.
 
-- title: string (song title if visible, else null)
-- artist: string (artist/composer if visible, else null)  
-- key: string (musical key if detected, e.g. "G", "Am", "F#", else null)
-- bpm: number (BPM if detected, else null)
-- capo: number (capo position if detected, else null)
-- time_signature: string (e.g. "4/4", else null)
+FORMAT for each line pair:
+  CHORD LINE:  Use spaces to position each chord above the syllable it belongs to
+  LYRIC LINE:  The full lyric text
+
+Example from image:
+  If a chord "G" sits above the "A" in "Amazing" and "D" sits above "grace":
+    G           D
+    Amazing     grace how sweet the sound
+
+  If "Em" is above "that" and "C" is above "saved":
+    Em    C
+    that  saved a wretch like me
+
+NEVER just list chords separated by spaces without aligning them to syllables.
+ALWAYS count the characters in the lyric to position chords correctly.
+If you are unsure of exact position, get as close as possible — approximate is better than wrong.
+
+## HANDWRITTEN vs PRINTED CHORDS
+- This may be a PRINTED chart (VerseView, etc.) with HANDWRITTEN chord corrections on top.
+- Handwritten chords in pen/pencil ALWAYS override printed chords beneath them.
+- Use handwritten chords as the final version. Note this in confidence_notes.
+
+## OUTPUT FORMAT
+Return a JSON object:
+- title: string or null
+- artist: string or null
+- key: string (e.g. "G", "Am", "F#") or null
+- bpm: number or null
+- capo: number or null (extract from "Capo X" notation)
+- time_signature: string (e.g. "4/4") or null
 - language: "English" | "Malayalam" | null
-- chart_content: string (the full chord chart with chords and lyrics, preserving line breaks and spacing. Chord lines should have chords separated by spaces. Section headers like [Verse 1], [Chorus], [Bridge] should be on their own lines. Preserve all chord symbols exactly: G, D/F#, F#m7, Asus, Cadd9, Am7, Bb, Eb, Gsus4, Bm, etc.)
-- malayalam_lyrics: string (if Malayalam script lyrics are present, extract them here with Unicode Malayalam characters preserved, else null)
-- transliteration_lyrics: string (if English phonetic transliteration of Malayalam is present, extract here, else null)
-- lyrics: string (English lyrics if present without chords, else null)
-- section_headers: array of strings (detected section names like "Verse 1", "Chorus", "Bridge", etc.)
-- confidence_notes: string (brief note about OCR confidence, any unclear parts, or warnings)
+- chart_content: string — the FULL chart with space-aligned chord+lyric pairs. Section headers on their own line in [Verse 1] / [Chorus] / [Bridge] format. Nashville numbers (1, 4, 5) preserved as-is. Slash chords (G/B, D/F#) preserved exactly.
+- malayalam_lyrics: string — Malayalam Unicode script if present, else null. Do NOT convert to transliteration.
+- transliteration_lyrics: string — English phonetic transliteration of Malayalam if present, else null
+- lyrics: string — English lyrics without chords if present, else null
+- section_headers: array of section names found
+- confidence_notes: string — note any low-confidence chords, handwritten corrections applied, or unclear parts
 - source_type: "OCR Import"
 
-IMPORTANT RULES:
-- This document is a PRINTED worship chart (from VerseView or similar software) with HANDWRITTEN chord corrections added on top.
-- HANDWRITTEN chord annotations ALWAYS take priority over the printed chords beneath them. If a handwritten chord is scrawled above or beside a printed chord, use the handwritten one.
-- Handwritten chords are typically written in pen/pencil directly above the lyric line or crossing out a printed chord. They are the FINAL intended version.
-- Preserve chord spacing EXACTLY as it appears above lyrics
-- Malayalam Unicode characters must be preserved exactly - do NOT convert to transliteration
-- If a line has chords above lyrics, put chords on one line, lyrics on the next
-- Section headers go on their own line in [brackets] format
-- If you see "Capo X" notation, extract the number
-- Nashville numbers (1, 4, 5, etc.) should be preserved as-is in chart_content
-- Slash chords like G/B, D/F# should be preserved exactly
-- If you detect handwritten corrections, mention them in confidence_notes (e.g. "Handwritten chord corrections detected and applied in bars 2, 5")
-- If confidence is low for any handwritten symbol, mention it in confidence_notes
-- Never fabricate content that isn't clearly visible in the image`;
+## OTHER RULES
+- Never fabricate content not visible in the image
+- Preserve all chord symbols exactly: G, D/F#, F#m7, Asus, Cadd9, Am7, Bb, Eb, Gsus4, Bm, etc.
+- Malayalam Unicode characters must be preserved exactly`;
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
