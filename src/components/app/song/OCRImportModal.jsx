@@ -99,10 +99,10 @@ function UploadStep({ onFileSelected, uploading }) {
 
 // ── Step 2: Processing ────────────────────────────────────────────────────────
 const SCAN_STEPS = [
-  { label: "Analyzing image structure...", pct: 20 },
-  { label: "Detecting chord lines...", pct: 45 },
-  { label: "Extracting lyrics & sections...", pct: 70 },
-  { label: "Processing Malayalam content...", pct: 90 },
+  { label: "Analyzing image structure...", pct: 15 },
+  { label: "Detecting chord lines...", pct: 35 },
+  { label: "Extracting lyrics & sections...", pct: 60 },
+  { label: "Generating Malayalam translation...", pct: 85 },
 ];
 
 function ProcessingStep({ fileName }) {
@@ -332,6 +332,42 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
       const res = await ocrChartImport({ file_url });
       const data = res?.data?.data || res?.data?.response || res?.data;
       if (!data) throw new Error('OCR returned no data');
+
+      // Auto-generate Malayalam lyrics if English lyrics were extracted and no Malayalam present
+      const lyricsSource = data.lyrics || data.chart_content;
+      if (lyricsSource && !data.malayalam_lyrics) {
+        try {
+          const mlRes = await base44.integrations.Core.InvokeLLM({
+            prompt: `You are a Malayalam translation and transliteration specialist for Christian worship songs.
+
+Given the following English worship song lyrics, produce:
+1. A faithful Malayalam translation (in proper Malayalam Unicode script)
+2. An English phonetic transliteration of that Malayalam translation
+
+Rules:
+- Preserve the section structure (Verse 1, Chorus, Bridge etc.)
+- Keep the same number of lines per section
+- The translation should be singable and spiritually accurate
+- Do not add or remove sections
+
+Lyrics:
+${lyricsSource}`,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                malayalam_lyrics: { type: "string" },
+                transliteration_lyrics: { type: "string" }
+              }
+            }
+          });
+          if (mlRes?.malayalam_lyrics) {
+            data.malayalam_lyrics = mlRes.malayalam_lyrics;
+            data.transliteration_lyrics = mlRes.transliteration_lyrics || '';
+          }
+        } catch (_) {
+          // Non-fatal — OCR data still usable without Malayalam
+        }
+      }
 
       // Always default to Needs Review
       data.verified_status = 'Needs Review';
