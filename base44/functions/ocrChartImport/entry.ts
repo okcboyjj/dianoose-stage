@@ -9,8 +9,10 @@ Deno.serve(async (req) => {
     const { file_url } = await req.json();
     if (!file_url) return Response.json({ error: 'file_url is required' }, { status: 400 });
 
-    // ── Single combined pass + Malayalam in parallel ──────────────────────────
-    const mainPrompt = `You are a worship chart OCR specialist. Extract ALL content from this worship chart image in one pass.
+    // Step 1: Extract chart structure — lyrics are Manglish (Malayalam phonetic in English)
+    const mainPrompt = `You are a worship chart OCR specialist. Extract ALL content from this worship chart image.
+
+The lyrics are written in Manglish — Malayalam words phonetically written in English letters (e.g. "Njan ninne sthuthikkum", "Yeshu entae daivam").
 
 Return a JSON object with:
 - title: string or null
@@ -19,10 +21,8 @@ Return a JSON object with:
 - bpm: number or null
 - capo: number or null
 - time_signature: string (e.g. "4/4") or null
-- language: "English" | "Malayalam" | null
-- lyrics: string — full lyrics without chords, sections separated by blank lines
-- malayalam_lyrics: string — Malayalam Unicode script if present in image, else null
-- transliteration_lyrics: string — English phonetic transliteration of Malayalam if present, else null
+- language: "Malayalam"
+- lyrics: string — full Manglish lyrics without chords, sections separated by blank lines
 - confidence_notes: string — any OCR issues
 - sections: array of section objects in order:
     {
@@ -34,34 +34,17 @@ Return a JSON object with:
         }
       ]
     }
-  Each line has the lyric text AND any chords mapped to word positions (0 = first word).
+  Each line has the Manglish lyric text AND any chords mapped to word positions (0 = first word).
   chord is the exact symbol (G, D/F#, F#m7, Bb, Em7, Asus2 etc.).
   If a line has no chords, chords = [].
 
 Rules:
 - Never fabricate content — only extract what is visible
-- Preserve Malayalam Unicode exactly
 - Section names go in name field, NOT in lyric text
 - Handwritten chords ALWAYS override any printed chord beneath them
 - Nashville numbers (1, 4, 5, 6m) are valid chords
 - Slash chords like G/B are one chord symbol`;
 
-    const malayalamPrompt = `You are a Malayalam translation specialist for Christian worship songs.
-
-Given English worship song lyrics, do the following in order:
-1. First produce a Manglish (English phonetic) transliteration of the Malayalam meaning — how the Malayalam words would sound written in English letters
-2. Then convert that Manglish into proper Malayalam Unicode script
-
-Rules:
-- Preserve section structure (Verse 1, Chorus, Bridge etc.)
-- Keep the same number of lines per section
-- Translation should be singable and spiritually accurate
-- transliteration_lyrics = the Manglish phonetic version
-- malayalam_lyrics = the full Malayalam Unicode script derived from the transliteration
-
-Return JSON: { transliteration_lyrics: string, malayalam_lyrics: string }`;
-
-    // Step 1: Extract chart structure from image
     const mainResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: mainPrompt,
       model: "gpt_5_4",
@@ -77,8 +60,6 @@ Return JSON: { transliteration_lyrics: string, malayalam_lyrics: string }`;
           time_signature: { type: "string" },
           language: { type: "string" },
           lyrics: { type: "string" },
-          malayalam_lyrics: { type: "string" },
-          transliteration_lyrics: { type: "string" },
           confidence_notes: { type: "string" },
           sections: {
             type: "array",
@@ -112,11 +93,21 @@ Return JSON: { transliteration_lyrics: string, malayalam_lyrics: string }`;
       }
     });
 
-    // Step 2: Use the extracted English lyrics to generate Manglish transliteration,
-    // then derive Malayalam script from it — passing lyrics as text (faster, no image needed)
-    const englishLyrics = mainResult.lyrics || '';
-    const malayalamResult = englishLyrics ? await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: `${malayalamPrompt}\n\nHere are the extracted English lyrics to translate:\n\n${englishLyrics}`,
+    // Step 2: Convert extracted Manglish lyrics directly into Malayalam Unicode script
+    const manglishLyrics = mainResult.lyrics || '';
+    const malayalamResult = manglishLyrics ? await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `You are a Manglish to Malayalam script converter for Christian worship songs.
+
+The following lyrics are written in Manglish (Malayalam phonetics in English letters). Convert them directly into proper Malayalam Unicode script. Do NOT translate — just convert the phonetics to script.
+
+Preserve all section labels (Verse 1, Chorus, Bridge etc.) and line breaks exactly.
+
+Manglish lyrics:
+${manglishLyrics}
+
+Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }
+- transliteration_lyrics = the original Manglish text (copy it as-is)
+- malayalam_lyrics = the Malayalam Unicode script version`,
       response_json_schema: {
         type: "object",
         properties: {
