@@ -98,9 +98,35 @@ function UploadStep({ onFileSelected, uploading }) {
 }
 
 // ── Step 2: Processing ────────────────────────────────────────────────────────
+const SCAN_STEPS = [
+  { label: "Analyzing image structure...", pct: 20 },
+  { label: "Detecting chord lines...", pct: 45 },
+  { label: "Extracting lyrics & sections...", pct: 70 },
+  { label: "Processing Malayalam content...", pct: 90 },
+];
+
 function ProcessingStep({ fileName }) {
+  const [progress, setProgress] = useState(0);
+  const [stepIdx, setStepIdx] = useState(0);
+
+  useState(() => {
+    // Smooth progress animation over ~11s then hold at 95% until done
+    const totalMs = 11000;
+    const interval = 80;
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      elapsed += interval;
+      // Ease-out curve: fast start, slows near 95
+      const raw = Math.min(95, Math.round(95 * (1 - Math.exp(-3.5 * elapsed / totalMs))));
+      setProgress(raw);
+      const idx = SCAN_STEPS.findLastIndex(s => raw >= s.pct - 20);
+      setStepIdx(Math.max(0, idx));
+    }, interval);
+    return () => clearInterval(timer);
+  });
+
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-6">
+    <div className="flex flex-col items-center justify-center py-12 gap-6">
       <div className="relative">
         <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
           <FileText className="w-9 h-9 text-primary" />
@@ -109,27 +135,41 @@ function ProcessingStep({ fileName }) {
           <Loader2 className="w-4 h-4 text-primary animate-spin" />
         </div>
       </div>
+
       <div className="text-center">
         <p className="text-base font-bold text-foreground">Scanning chart...</p>
         <p className="text-xs text-muted-foreground mt-1.5 max-w-[240px] leading-relaxed">
-          AI is extracting chords, lyrics, section headers, and Malayalam content from your upload.
+          AI is extracting chords, lyrics, section headers, and Malayalam content.
         </p>
         {fileName && <p className="text-[10px] text-muted-foreground/60 mt-2 truncate max-w-[200px]">{fileName}</p>}
       </div>
-      <div className="flex flex-col gap-2 w-full max-w-[240px]">
-        {["Analyzing image structure...", "Detecting chord lines...", "Extracting lyrics & sections...", "Processing Malayalam content..."].map((s, i) => (
-          <motion.div key={s}
+
+      {/* Progress bar */}
+      <div className="w-full max-w-[280px] space-y-2">
+        <div className="flex justify-between items-center">
+          <p className="text-[11px] text-muted-foreground">{SCAN_STEPS[stepIdx]?.label}</p>
+          <span className="text-[11px] font-bold text-primary tabular-nums">{progress}%</span>
+        </div>
+        <div className="h-2 w-full bg-white/8 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 w-full max-w-[280px]">
+        {SCAN_STEPS.map((s, i) => (
+          <motion.div key={s.label}
             initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.5 }}
+            animate={{ opacity: stepIdx >= i ? 1 : 0.3, x: 0 }}
+            transition={{ delay: i * 0.4 }}
             className="flex items-center gap-2 text-[11px] text-muted-foreground"
           >
-            <motion.div
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
-              className="w-1.5 h-1.5 rounded-full bg-primary"
-            />
-            {s}
+            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${stepIdx >= i ? 'bg-primary' : 'bg-white/20'}`} />
+            <span className={stepIdx >= i ? 'text-foreground/80' : ''}>{s.label}</span>
+            {stepIdx > i && <span className="ml-auto text-accent text-[10px]">✓</span>}
           </motion.div>
         ))}
       </div>
