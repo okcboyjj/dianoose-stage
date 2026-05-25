@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Loader2, FileImage, AlertTriangle, CheckCircle2, Save, Plus, FileText } from "lucide-react";
+import { X, Upload, Loader2, FileImage, AlertTriangle, CheckCircle2, Save, Plus, FileText, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ const ACCEPTED = "image/jpeg,image/png,image/webp,image/gif,image/heic,applicati
 // ── Step 1: Upload ────────────────────────────────────────────────────────────
 function UploadStep({ onFileSelected, uploading }) {
   const inputRef = useRef(null);
+  const cameraRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
   const handleFile = (file) => {
@@ -69,10 +70,18 @@ function UploadStep({ onFileSelected, uploading }) {
 
       <input ref={inputRef} type="file" accept={ACCEPTED} className="hidden"
         onChange={e => handleFile(e.target.files[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={e => handleFile(e.target.files[0])} />
 
-      <p className="text-[10px] text-muted-foreground/60 text-center">
-        Mobile users: tap the area above to use your camera or photo library
-      </p>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => cameraRef.current?.click()}
+        disabled={uploading}
+        className="w-full border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 h-10"
+      >
+        <Camera className="w-4 h-4 mr-2" /> Take Photo with Camera
+      </Button>
     </div>
   );
 }
