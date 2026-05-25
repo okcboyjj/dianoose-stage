@@ -61,7 +61,7 @@ Return a JSON object:
 
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
-      model: "claude_sonnet_4_6",
+      model: "gpt_5_4",
       file_urls: [file_url],
       response_json_schema: {
         type: "object",
