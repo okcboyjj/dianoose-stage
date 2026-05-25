@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 const CameraCapture = lazy(() => import("./CameraCapture"));
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Loader2, FileImage, AlertTriangle, CheckCircle2, Save, Plus, FileText, Camera } from "lucide-react";
+import { X, Loader2, FileImage, AlertTriangle, CheckCircle2, Plus, FileText, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { base44 } from "@/api/base44Client";
-import { ocrChartImport } from "@/functions/ocrChartImport";
 
 const ACCEPTED = "image/jpeg,image/png,image/webp,image/gif,image/heic,application/pdf";
 
@@ -352,8 +351,8 @@ export default function OCRImportModal({ onClose, onSaved, existingSong, churchI
       setUploading(false);
       setStep('processing');
 
-      const res = await ocrChartImport({ file_url });
-      const data = res?.data?.data || res?.data?.response || res?.data;
+      const res = await base44.functions.invoke("ocrChartImport", { file_url });
+      const data = res?.data || res;
       if (!data) throw new Error('OCR returned no data');
 
       // Always default to Needs Review
