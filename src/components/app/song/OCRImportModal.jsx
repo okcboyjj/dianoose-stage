@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, lazy, Suspense } from "react";
+const CameraCapture = lazy(() => import("./CameraCapture"));
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Loader2, FileImage, AlertTriangle, CheckCircle2, Save, Plus, FileText, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ function UploadStep({ onFileSelected, uploading }) {
   const inputRef = useRef(null);
   const cameraRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const handleFile = (file) => {
     if (!file) return;
@@ -76,12 +78,21 @@ function UploadStep({ onFileSelected, uploading }) {
       <Button
         type="button"
         variant="outline"
-        onClick={() => cameraRef.current?.click()}
+        onClick={() => setShowCamera(true)}
         disabled={uploading}
         className="w-full border-white/15 text-muted-foreground hover:text-foreground hover:border-primary/50 h-10"
       >
         <Camera className="w-4 h-4 mr-2" /> Take Photo with Camera
       </Button>
+
+      {showCamera && (
+        <Suspense fallback={null}>
+          <CameraCapture
+            onCapture={(file) => { setShowCamera(false); onFileSelected(file); }}
+            onClose={() => setShowCamera(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
