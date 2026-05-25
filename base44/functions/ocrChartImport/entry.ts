@@ -112,7 +112,6 @@ Return JSON: { malayalam_lyrics: string, transliteration_lyrics: string }`;
       }),
       base44.asServiceRole.integrations.Core.InvokeLLM({
         prompt: malayalamPrompt,
-        model: "gpt_5_4",
         file_urls: [file_url],
         response_json_schema: {
           type: "object",

@@ -110,8 +110,8 @@ function ProcessingStep({ fileName }) {
   const [stepIdx, setStepIdx] = useState(0);
 
   useEffect(() => {
-    // Target ~20s total for single-pass + parallel Malayalam
-    const PHASE1_MS = 18000;
+    // Phase 1: 0→88% over 35s (main LLM pass), Phase 2: crawl 88→99% at 0.1%/tick
+    const PHASE1_MS = 35000;
     const PHASE1_TARGET = 88;
     const interval = 200;
     let elapsed = 0;
@@ -125,7 +125,7 @@ function ProcessingStep({ fileName }) {
         raw = Math.min(PHASE1_TARGET, Math.round(PHASE1_TARGET * (elapsed / PHASE1_MS)));
         if (raw >= PHASE1_TARGET) phase = 2;
       } else {
-        phase2Progress = Math.min(96, phase2Progress + 0.25);
+        phase2Progress = Math.min(99, phase2Progress + 0.1);
         raw = Math.round(phase2Progress);
       }
       setProgress(raw);
