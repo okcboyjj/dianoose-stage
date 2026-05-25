@@ -99,10 +99,10 @@ function UploadStep({ onFileSelected, uploading }) {
 
 // ── Step 2: Processing ────────────────────────────────────────────────────────
 const SCAN_STEPS = [
-  { label: "Extracting lyrics & sections..." },
+  { label: "Scanning chart & extracting lyrics..." },
   { label: "Mapping chord positions..." },
-  { label: "Building chart..." },
   { label: "Generating Malayalam translation..." },
+  { label: "Building chart..." },
 ];
 
 function ProcessingStep({ fileName }) {
@@ -110,9 +110,8 @@ function ProcessingStep({ fileName }) {
   const [stepIdx, setStepIdx] = useState(0);
 
   useEffect(() => {
-    // Phase 1: 0 → 88% over ~28s (pass1+Malayalam parallel ~15s, then pass2 ~15s)
-    // Phase 2: 88 → 96% very slowly (waiting for completion)
-    const PHASE1_MS = 28000;
+    // Target ~20s total for single-pass + parallel Malayalam
+    const PHASE1_MS = 18000;
     const PHASE1_TARGET = 88;
     const interval = 200;
     let elapsed = 0;
@@ -123,17 +122,14 @@ function ProcessingStep({ fileName }) {
       elapsed += interval;
       let raw;
       if (phase === 1) {
-        // Linear-ish with slight ease: reaches ~88 at 42s
         raw = Math.min(PHASE1_TARGET, Math.round(PHASE1_TARGET * (elapsed / PHASE1_MS)));
-        if (raw >= PHASE1_TARGET) { phase = 2; }
+        if (raw >= PHASE1_TARGET) phase = 2;
       } else {
-        // Phase 2: very slow crawl, +0.3% every tick, max 96
-        phase2Progress = Math.min(96, phase2Progress + 0.3);
+        phase2Progress = Math.min(96, phase2Progress + 0.25);
         raw = Math.round(phase2Progress);
       }
       setProgress(raw);
-      // Advance step indicators at evenly spaced thresholds
-      const thresholds = [0, 25, 55, 78];
+      const thresholds = [0, 30, 60, 82];
       const idx = thresholds.reduce((acc, t, i) => raw >= t ? i : acc, 0);
       setStepIdx(idx);
     }, interval);
@@ -142,31 +138,28 @@ function ProcessingStep({ fileName }) {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 gap-6">
+    <div className="flex flex-col items-center justify-center py-4 gap-4">
       <div className="relative">
-        <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-          <FileText className="w-9 h-9 text-primary" />
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <FileText className="w-7 h-7 text-primary" />
         </div>
-        <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-background border border-white/10 flex items-center justify-center">
-          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+        <div className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-background border border-white/10 flex items-center justify-center">
+          <Loader2 className="w-3 h-3 text-primary animate-spin" />
         </div>
       </div>
 
       <div className="text-center">
-        <p className="text-base font-bold text-foreground">Scanning chart...</p>
-        <p className="text-xs text-muted-foreground mt-1.5 max-w-[240px] leading-relaxed">
-          AI is extracting chords, lyrics, section headers, and Malayalam content.
-        </p>
-        {fileName && <p className="text-[10px] text-muted-foreground/60 mt-2 truncate max-w-[200px]">{fileName}</p>}
+        <p className="text-sm font-bold text-foreground">Scanning chart...</p>
+        {fileName && <p className="text-[10px] text-muted-foreground/60 mt-1 truncate max-w-[220px]">{fileName}</p>}
       </div>
 
       {/* Progress bar */}
-      <div className="w-full max-w-[280px] space-y-2">
+      <div className="w-full space-y-1.5">
         <div className="flex justify-between items-center">
           <p className="text-[11px] text-muted-foreground">{SCAN_STEPS[stepIdx]?.label}</p>
           <span className="text-[11px] font-bold text-primary tabular-nums">{progress}%</span>
         </div>
-        <div className="h-2 w-full bg-white/8 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-white/8 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
             animate={{ width: `${progress}%` }}
@@ -175,18 +168,13 @@ function ProcessingStep({ fileName }) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 w-full max-w-[280px]">
+      <div className="w-full grid grid-cols-2 gap-x-4 gap-y-1.5">
         {SCAN_STEPS.map((s, i) => (
-          <motion.div key={s.label}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: stepIdx >= i ? 1 : 0.3, x: 0 }}
-            transition={{ delay: i * 0.4 }}
-            className="flex items-center gap-2 text-[11px] text-muted-foreground"
-          >
-            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${stepIdx >= i ? 'bg-primary' : 'bg-white/20'}`} />
-            <span className={stepIdx >= i ? 'text-foreground/80' : ''}>{s.label}</span>
-            {stepIdx > i && <span className="ml-auto text-accent text-[10px]">✓</span>}
-          </motion.div>
+          <div key={s.label} className="flex items-center gap-1.5">
+            <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${stepIdx >= i ? 'bg-primary' : 'bg-white/20'}`} />
+            <span className={`text-[10px] leading-tight ${stepIdx >= i ? 'text-foreground/80' : 'text-muted-foreground/40'}`}>{s.label}</span>
+            {stepIdx > i && <span className="ml-auto text-accent text-[10px] shrink-0">✓</span>}
+          </div>
         ))}
       </div>
     </div>
