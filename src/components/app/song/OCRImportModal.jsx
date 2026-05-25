@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 const CameraCapture = lazy(() => import("./CameraCapture"));
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Loader2, FileImage, AlertTriangle, CheckCircle2, Save, Plus, FileText, Camera } from "lucide-react";
@@ -99,31 +99,47 @@ function UploadStep({ onFileSelected, uploading }) {
 
 // ── Step 2: Processing ────────────────────────────────────────────────────────
 const SCAN_STEPS = [
-  { label: "Analyzing image structure...", pct: 15 },
-  { label: "Detecting chord lines...", pct: 35 },
-  { label: "Extracting lyrics & sections...", pct: 60 },
-  { label: "Generating Malayalam translation...", pct: 85 },
+  { label: "Extracting lyrics & sections..." },
+  { label: "Mapping chord positions (pass 2)..." },
+  { label: "Building chart..." },
+  { label: "Generating Malayalam translation..." },
 ];
 
 function ProcessingStep({ fileName }) {
   const [progress, setProgress] = useState(0);
   const [stepIdx, setStepIdx] = useState(0);
 
-  useState(() => {
-    // Smooth progress animation over ~11s then hold at 95% until done
-    const totalMs = 11000;
-    const interval = 80;
+  useEffect(() => {
+    // Phase 1: 0 → 88% over ~42s (two LLM passes + Malayalam = ~40-50s real time)
+    // Phase 2: 88 → 96% very slowly (waiting for completion)
+    const PHASE1_MS = 42000;
+    const PHASE1_TARGET = 88;
+    const interval = 200;
     let elapsed = 0;
+    let phase = 1;
+    let phase2Progress = PHASE1_TARGET;
+
     const timer = setInterval(() => {
       elapsed += interval;
-      // Ease-out curve: fast start, slows near 95
-      const raw = Math.min(95, Math.round(95 * (1 - Math.exp(-3.5 * elapsed / totalMs))));
+      let raw;
+      if (phase === 1) {
+        // Linear-ish with slight ease: reaches ~88 at 42s
+        raw = Math.min(PHASE1_TARGET, Math.round(PHASE1_TARGET * (elapsed / PHASE1_MS)));
+        if (raw >= PHASE1_TARGET) { phase = 2; }
+      } else {
+        // Phase 2: very slow crawl, +0.3% every tick, max 96
+        phase2Progress = Math.min(96, phase2Progress + 0.3);
+        raw = Math.round(phase2Progress);
+      }
       setProgress(raw);
-      const idx = SCAN_STEPS.findLastIndex(s => raw >= s.pct - 20);
-      setStepIdx(Math.max(0, idx));
+      // Advance step indicators at evenly spaced thresholds
+      const thresholds = [0, 25, 55, 78];
+      const idx = thresholds.reduce((acc, t, i) => raw >= t ? i : acc, 0);
+      setStepIdx(idx);
     }, interval);
+
     return () => clearInterval(timer);
-  });
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-6">
