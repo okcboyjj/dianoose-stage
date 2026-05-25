@@ -37,12 +37,12 @@ function TeamCodeModal({ church, onClose, onCodeRegenerated }) {
     <div className="fixed inset-0 bg-background/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card border border-border/50 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-secondary/20">
-          <h3 className="font-bold text-foreground text-lg">📤 Team Join Code</h3>
+          <h3 className="font-bold text-foreground text-lg">Team Join Code</h3>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-background/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-6 space-y-5">
           <div className="bg-secondary/30 border border-border/30 rounded-xl p-4 space-y-2">
-            <p className="text-sm font-bold text-foreground">👥 How to get your team logged in:</p>
+            <p className="text-sm font-bold text-foreground">How to get your team logged in:</p>
             <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside leading-relaxed">
               <li>Add each member in Admin Panel with their email & a temp password</li>
               <li>Click <strong className="text-foreground">Copy Team Code</strong> below</li>
@@ -164,7 +164,7 @@ export default function AdminSection({ church, members, onRefresh, onChurchUpdat
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">🛡 Admin Panel</h1>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">Admin Panel</h1>
         <p className="text-sm text-muted-foreground font-medium">Manage church members, roles, and data.</p>
       </div>
 
@@ -172,7 +172,7 @@ export default function AdminSection({ church, members, onRefresh, onChurchUpdat
       <div className="glass-panel rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-1">
           <Share2 className="w-4 h-4 text-primary" />
-          <h2 className="text-base font-bold text-foreground">👥 Share with Your Team</h2>
+          <h2 className="text-base font-bold text-foreground">Share with Your Team</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-4 leading-relaxed">Team members need a <strong className="text-foreground">Team Join Code</strong> to load the app on their phone.</p>
         <Button onClick={() => setShowCodeModal(true)} variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 h-10 rounded-xl font-semibold transition-all">
@@ -185,7 +185,7 @@ export default function AdminSection({ church, members, onRefresh, onChurchUpdat
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/30">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-primary" />
-            <h2 className="text-base font-bold text-foreground">👥 Church Members</h2>
+            <h2 className="text-base font-bold text-foreground">Church Members</h2>
             <span className="text-xs text-muted-foreground ml-1">({members.length})</span>
           </div>
           <Button onClick={() => setShowAddMember(true)} size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg h-8 px-4 font-semibold">
