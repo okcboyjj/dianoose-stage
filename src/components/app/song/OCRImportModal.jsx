@@ -183,8 +183,20 @@ function ProcessingStep({ fileName }) {
 
 // ── Step 3: Review ────────────────────────────────────────────────────────────
 function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExisting, onCancel, saving }) {
-  const [d, setD] = useState(extracted);
-  const set = (k, v) => { const next = { ...d, [k]: v }; setD(next); onDataChange(next); };
+  const [history, setHistory] = useState([extracted]);
+  const [idx, setIdx] = useState(0);
+  const d = history[idx];
+
+  const set = (k, v) => {
+    const next = { ...d, [k]: v };
+    const newHist = [...history.slice(0, idx + 1), next];
+    setHistory(newHist);
+    setIdx(newHist.length - 1);
+    onDataChange(next);
+  };
+  const undo = () => { const i = idx - 1; setIdx(i); onDataChange(history[i]); };
+  const redo = () => { const i = idx + 1; setIdx(i); onDataChange(history[i]); };
+  const reset = () => { setHistory([extracted]); setIdx(0); onDataChange(extracted); };
 
   const hasConfidenceWarning = !!d.confidence_notes;
 
@@ -222,7 +234,14 @@ function ReviewStep({ fileUrl, extracted, onDataChange, onSaveNew, onSaveToExist
 
         {/* Editable fields */}
         <div className="space-y-3">
-          <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Extracted Data — Edit as needed</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Extracted Data — Edit as needed</p>
+            <div className="flex items-center gap-1">
+              <button onClick={undo} disabled={idx === 0} className="text-[11px] px-2 py-1 rounded border border-white/10 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors">↩ Undo</button>
+              <button onClick={redo} disabled={idx === history.length - 1} className="text-[11px] px-2 py-1 rounded border border-white/10 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors">↪ Redo</button>
+              <button onClick={reset} disabled={idx === 0} className="text-[11px] px-2 py-1 rounded border border-white/10 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors">↺ Reset</button>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
