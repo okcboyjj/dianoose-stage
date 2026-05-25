@@ -1,7 +1,8 @@
 import { useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Trash2, Loader2 } from "lucide-react";
+import { X, Save, Trash2, Loader2, ScanLine } from "lucide-react";
 const ChartBuilderModal = lazy(() => import("./ChartBuilderModal"));
+const OCRImportModal = lazy(() => import("./OCRImportModal"));
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
   const [customSection, setCustomSection] = useState('');
   const [showAddSection, setShowAddSection] = useState(false);
   const [showChartBuilder, setShowChartBuilder] = useState(false);
+  const [showOCR, setShowOCR] = useState(false);
 
   const [form, setForm] = useState({
     title: song?.title || '',
@@ -324,14 +326,22 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
 
                 {tab === 'chart' && (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Chart preview</p>
-                      <button
-                        onClick={() => setShowChartBuilder(true)}
-                        className="flex items-center gap-1.5 text-xs font-bold text-primary-foreground bg-primary rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors"
-                      >
-                        Full Editor
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowOCR(true)}
+                          className="flex items-center gap-1.5 text-xs font-bold text-foreground bg-white/8 border border-white/15 rounded-lg px-3 py-1.5 hover:bg-white/12 transition-colors"
+                        >
+                          <ScanLine className="w-3.5 h-3.5" /> Scan Chart
+                        </button>
+                        <button
+                          onClick={() => setShowChartBuilder(true)}
+                          className="flex items-center gap-1.5 text-xs font-bold text-primary-foreground bg-primary rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors"
+                        >
+                          Full Editor
+                        </button>
+                      </div>
                     </div>
                     {form.chart_content ? (
                       <ChartViewer song={{ ...song, ...form }} />
@@ -360,7 +370,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
 
                       </select>
                     </div>
-                    {(form.language === 'Malayalam' || form.language === 'Mixed') && (
+                    {form.language === 'Malayalam' && (
                       <>
                         <div>
                           <Label className="text-xs text-muted-foreground mb-1 block">Malayalam Title (Unicode)</Label>
@@ -505,6 +515,19 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
             song={{ ...song, ...form }}
             onClose={() => setShowChartBuilder(false)}
             onSave={(newChart) => { set('chart_content', newChart); setShowChartBuilder(false); }}
+          />
+        </Suspense>
+      )}
+      {showOCR && (
+        <Suspense fallback={null}>
+          <OCRImportModal
+            existingSong={{ ...song, ...form }}
+            churchId={churchId}
+            onClose={() => setShowOCR(false)}
+            onSaved={(type) => {
+              setShowOCR(false);
+              if (type === 'existing') onSave();
+            }}
           />
         </Suspense>
       )}

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, X, Plus, Search, RefreshCw, Save, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft } from "lucide-react";
+import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Settings, LogOut, X, Plus, Search, RefreshCw, Save, Check, ArrowRight, AlertCircle, Loader2, Zap, Flame, Mail, Calendar, Globe, ChevronLeft, ScanLine } from "lucide-react";
+const OCRImportModal = lazy(() => import("@/components/app/song/OCRImportModal.jsx"));
 import MobileSelect from "@/components/ui/MobileSelect";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
@@ -1163,6 +1164,8 @@ function SongCard({ song, onEdit, onDelete, onPreview, preferredKey, onToggleFav
         {Number(song.capo) > 0 && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Capo {song.capo}</span>}
         {song.chart_content && <span className="text-[10px] font-bold bg-primary/15 text-primary border border-primary/25 rounded-full px-2.5 py-0.5">Chart</span>}
         {song.verified_status === "Verified" && <span className="text-[9px] font-bold bg-green-500/15 text-green-300 border border-green-500/25 rounded-full px-2 py-0.5">✓</span>}
+        {song.verified_status === "Needs Review" && <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/25 rounded-full px-2 py-0.5">Review</span>}
+        {(song.tags || []).includes('ocr-import') && <span className="text-[9px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/25 rounded-full px-2 py-0.5">OCR</span>}
       </div>
 
       {/* Arrangement sections */}
@@ -1261,6 +1264,7 @@ function MainApp({ onLogout }) {
   const [songKeyFilter, setSongKeyFilter] = useState("All");
   const [songSort, setSongSort] = useState("recent");
   const [songLibTab, setSongLibTab] = useState("church");
+  const [showOCRImport, setShowOCRImport] = useState(false);
 
   // React state for church so onChurchUpdate triggers re-renders
   const [church, setChurch] = useState(globalChurch);
@@ -1458,7 +1462,12 @@ function MainApp({ onLogout }) {
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Song Library</h1>
               <p className="text-sm text-muted-foreground font-medium">{songs.length} songs in library</p>
             </div>
-            <Button onClick={() => { setEditSong(null); setShowSongModal(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"><Plus className="w-4 h-4 mr-2" /> Add Song</Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowOCRImport(true)} className="bg-white/8 border border-white/15 text-foreground hover:bg-white/12 h-10 rounded-xl font-semibold transition-colors">
+                <ScanLine className="w-4 h-4 mr-2" /> Scan Chart
+              </Button>
+              <Button onClick={() => { setEditSong(null); setShowSongModal(true); }} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"><Plus className="w-4 h-4 mr-2" /> Add Song</Button>
+            </div>
           </div>
         </AnimatedElement>
 
@@ -1746,6 +1755,15 @@ function MainApp({ onLogout }) {
             onClose={() => setShowSongModal(false)}
             onSave={() => { setShowSongModal(false); loadData(); }}
             churchId={church?.id}
+          />
+        </Suspense>
+      )}
+      {showOCRImport && (
+        <Suspense fallback={null}>
+          <OCRImportModal
+            churchId={church?.id}
+            onClose={() => setShowOCRImport(false)}
+            onSaved={() => { setShowOCRImport(false); loadData(); }}
           />
         </Suspense>
       )}
