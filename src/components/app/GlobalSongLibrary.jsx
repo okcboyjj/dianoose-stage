@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag, ShieldCheck, Play } from "lucide-react";
+import { Music, Search, Plus, Loader2, Check, Filter, Youtube, ExternalLink, Clock, Tag, ShieldCheck, Play, AlertCircle } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
+const AP = AnimatePresence;
+const m = motion;
 
 const GlobalSongEntity = base44.entities.GlobalSong;
 
@@ -294,6 +297,28 @@ function SpotifyResultRow({ track, isImported, isImporting, onImport, playingId,
   );
 }
 
+// ── Duplicate toast ───────────────────────────────────────────────────────────
+function DuplicateToast({ title, onClose }) {
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 16, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.96 }}
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2.5 bg-[#1e1e30] border border-amber-500/40 rounded-2xl px-4 py-3 shadow-2xl shadow-black/60 max-w-xs w-[calc(100vw-2rem)]"
+    >
+      <div className="w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+        <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-foreground leading-tight truncate">Already in your library</p>
+        <p className="text-[11px] text-muted-foreground truncate mt-0.5">"{title}" has already been added.</p>
+      </div>
+      <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xs font-bold shrink-0 no-min-h no-min-w px-1">✕</button>
+    </m.div>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned }) {
   const [songs, setSongs] = useState([]);
@@ -306,6 +331,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   const [cloning, setCloning] = useState(null);
   const [cloned, setCloned] = useState({});
   const [langFilter, setLangFilter] = useState("All");
+  const [duplicateToast, setDuplicateToast] = useState(null); // { title }
 
   // Spotify
   const [spotifyResults, setSpotifyResults] = useState([]);
@@ -351,8 +377,21 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
 
   const artists = ["All", ...Array.from(new Set(songs.map(s => s.artist).filter(Boolean))).sort()];
 
+  // Check if a song title+artist already exists in the church library
+  const isDuplicate = useCallback((title, artist) => {
+    const t = title?.toLowerCase().trim();
+    const a = artist?.toLowerCase().trim();
+    return (churchSongs || []).some(s =>
+      s.title?.toLowerCase().trim() === t && (!a || !s.artist || s.artist?.toLowerCase().trim() === a)
+    );
+  }, [churchSongs]);
+
   const handleAdd = useCallback(async (song) => {
     if (cloning || cloned[song.id]) return;
+    if (isDuplicate(song.title, song.artist)) {
+      setDuplicateToast({ title: song.title });
+      return;
+    }
     setCloning(song.id);
     try {
       await base44.entities.Song.create({
@@ -372,6 +411,10 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
 
   const handleSpotifyImport = useCallback(async (track) => {
     if (importingId || importedIds.has(track.spotify_id)) return;
+    if (isDuplicate(track.title, track.artist)) {
+      setDuplicateToast({ title: track.title });
+      return;
+    }
     setImportingId(track.spotify_id);
     try {
       await base44.entities.Song.create({
@@ -551,6 +594,13 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
           </div>
         )}
       </div>
+
+      {/* Duplicate toast */}
+      <AP>
+        {duplicateToast && (
+          <DuplicateToast key="dup" title={duplicateToast.title} onClose={() => setDuplicateToast(null)} />
+        )}
+      </AP>
 
       {/* Spotify section */}
       <AnimatePresence>
