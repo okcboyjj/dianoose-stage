@@ -125,22 +125,27 @@ function GuitarDiagram({ chord }) {
       ))}
 
       {/* Barre */}
-      {barre && frets.some(f => f === barre) && (
-        <rect x={padLeft} y={padTop + 4 + (barre - baseFret) * cellH - 10} width={cellW * (numStrings - 1)} height={20} rx={10} fill="hsl(var(--primary))" opacity={0.85} />
-      )}
+      {barre && frets.some(f => f === barre) && (() => {
+        // Find leftmost and rightmost strings that have the barre fret
+        const barreStrings = frets.map((f, i) => f === barre ? i : -1).filter(i => i >= 0);
+        const x1 = padLeft + barreStrings[0] * cellW;
+        const x2 = padLeft + barreStrings[barreStrings.length - 1] * cellW;
+        const barreY = padTop + 4 + (barre - baseFret) * cellH + cellH / 2;
+        return <rect key="barre" x={x1} y={barreY - 10} width={x2 - x1} height={20} rx={10} fill="hsl(var(--primary))" opacity={0.85} />;
+      })()}
 
       {/* Dots */}
       {frets.map((fret, si) => {
         const x = padLeft + si * cellW;
         if (fret === -1) {
-          return <text key={si} x={x - 4} y={padTop - 6} fontSize="13" fill="#ef4444" textAnchor="middle">×</text>;
+          return <text key={si} x={x} y={padTop - 6} fontSize="13" fill="#ef4444" textAnchor="middle">×</text>;
         }
         if (fret === 0) {
           return <circle key={si} cx={x} cy={padTop - 8} r={5} fill="none" stroke="#a0a0b0" strokeWidth={1.5} />;
         }
         const y = padTop + 4 + (fret - baseFret) * cellH + cellH / 2;
         return (
-          <circle key={si} cx={x} cy={y} r={10} fill="hsl(var(--primary))" />
+          <circle key={si} cx={x} cy={y} r={9} fill="hsl(var(--primary))" />
         );
       })}
 
