@@ -15,13 +15,13 @@ const SongEntity = base44.entities.Song;
 
 const ARRANGEMENT_SECTIONS = ['Intro', 'V1', 'Pre-Ch', 'Chorus', 'V2', 'Bridge', 'V3', 'Tag', 'Outro'];
 
-const TABS = [
-  { id: 'details', label: 'Details', icon: null },
-  { id: 'malayalam', label: 'മലയാളം', icon: null },
-  { id: 'chart', label: 'Chart', icon: null },
-  { id: 'lyrics', label: 'Lyrics', icon: null },
-  { id: 'patches', label: 'Patches', icon: null },
-  { id: 'prod', label: 'Prod', icon: null },
+const ALL_TABS = [
+  { id: 'details', label: 'Details' },
+  { id: 'malayalam', label: 'മലയാളം', malayalamOnly: true },
+  { id: 'chart', label: 'Chart' },
+  { id: 'lyrics', label: 'Lyrics' },
+  { id: 'patches', label: 'Patches' },
+  { id: 'prod', label: 'Prod' },
 ];
 
 export default function SongDetailModal({ song, onClose, onSave, churchId }) {
@@ -66,7 +66,17 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
     verified_by: song?.verified_by || '',
   });
 
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const tabs = ALL_TABS.filter(t => !t.malayalamOnly || form.language === 'Malayalam');
+  const set = (k, v) => {
+    setForm(f => {
+      const next = { ...f, [k]: v };
+      // If switching away from Malayalam, jump off the malayalam tab
+      if (k === 'language' && v !== 'Malayalam' && tab === 'malayalam') {
+        setTab('details');
+      }
+      return next;
+    });
+  };
 
   const handleSave = async () => {
     setSaving(true); setSaveError(null);
@@ -242,7 +252,7 @@ export default function SongDetailModal({ song, onClose, onSave, churchId }) {
 
           {/* Tabs */}
           <div className="flex gap-0 px-2 pt-1 pb-0 shrink-0 border-b border-white/10 overflow-x-auto scrollbar-hide">
-            {TABS.map(t => (
+            {tabs.map(t => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
