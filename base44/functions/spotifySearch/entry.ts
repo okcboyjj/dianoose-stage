@@ -10,9 +10,16 @@ async function getSpotifyToken() {
     headers: {
       "Authorization": `Basic ${creds}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "Mozilla/5.0 (compatible; SpotifyAPI/1.0)",
+      "Accept": "application/json",
     },
     body: "grant_type=client_credentials",
   });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Spotify token error ${res.status}: ${text.slice(0, 200)}`);
+  }
 
   const data = await res.json();
   return data.access_token;
