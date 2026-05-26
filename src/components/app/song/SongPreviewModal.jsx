@@ -4,14 +4,14 @@ import { X, Music } from "lucide-react";
 import { transposeFullChart, chartToNashville, ALL_KEYS_SHARP, ALL_KEYS_FLAT, suggestCapo } from "./ChordTransposer";
 
 // ── Chord extraction from chart ───────────────────────────────────────────────
-const CHORD_REGEX = /(?<![A-Za-z#b])([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11)?(?:\/[A-G][b#]?)?)(?![A-Za-z#])/g;
+const CHORD_REGEX = /(?<![A-Za-z#b])([A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|13|11|9|7|4|2)?(?:\/[A-G][b#]?)?)(?!\d)/g;
 
 function isChordLine(line) {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith('[')) return false;
   // Must have at least one chord token somewhere in the line
   const tokens = trimmed.split(/\s+/).filter(Boolean);
-  const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|7|9|11|13)?(?:\/[A-G][b#]?)?$/.test(t)).length;
+  const chordCount = tokens.filter(t => /^[A-G][b#]?(?:maj7|maj|min7|m7|m|sus4|sus2|sus|add9|add2|dim7|dim|aug|13|11|9|7|4|2)?(?:\/[A-G][b#]?)?$/.test(t)).length;
   // A chord line: majority of non-empty tokens are chords, no sentence punctuation
   return chordCount > 0 && chordCount >= tokens.length * 0.5 && !/[,!?]/.test(trimmed);
 }
@@ -83,6 +83,12 @@ const GUITAR_CHORDS = {
   'A7':   { frets: [-1,0,2,0,2,0], baseFret: 1, barre: null },
   'Cadd9':{ frets: [-1,3,2,0,3,0], baseFret: 1, barre: null },
   'Dadd9':{ frets: [-1,-1,0,2,3,0], baseFret: 1, barre: null },
+  'Dadd2':{ frets: [-1,-1,0,2,3,0], baseFret: 1, barre: null },
+  'D2':   { frets: [-1,-1,0,2,3,0], baseFret: 1, barre: null },
+  'Gadd9':{ frets: [3,2,0,2,0,3], baseFret: 1, barre: null },
+  'G2':   { frets: [3,2,0,2,0,3], baseFret: 1, barre: null },
+  'A2':   { frets: [-1,0,2,2,0,0], baseFret: 1, barre: null },
+  'E2':   { frets: [0,2,2,1,0,2], baseFret: 1, barre: null },
   'Cmaj7':{ frets: [-1,3,2,0,0,0], baseFret: 1, barre: null },
   'Gmaj7':{ frets: [3,2,0,0,0,2], baseFret: 1, barre: null },
   'Emaj7':{ frets: [0,2,1,1,0,0], baseFret: 1, barre: null },
@@ -98,7 +104,7 @@ const PIANO_CHORDS = {
   'Gsus4':[7,0,2],'Dsus4':[2,7,9],'Asus2':[9,11,4],'Asus4':[9,2,4],'Esus4':[4,9,11],
   'G7':[7,11,2,5],'D7':[2,6,9,0],'E7':[4,8,11,2],'A7':[9,1,4,7],
   'Cmaj7':[0,4,7,11],'Gmaj7':[7,11,2,6],'Emaj7':[4,8,11,3],'Amaj7':[9,1,4,8],
-  'Cadd9':[0,4,7,2],'Dadd9':[2,6,9,4],
+  'Cadd9':[0,4,7,2],'Dadd9':[2,6,9,4],'Dadd2':[2,6,9,4],'D2':[2,6,9,4],'Gadd9':[7,11,2,9],'G2':[7,11,2,9],'A2':[9,1,4,11],'E2':[4,8,11,6],
 };
 
 // ── Guitar SVG diagram ────────────────────────────────────────────────────────
