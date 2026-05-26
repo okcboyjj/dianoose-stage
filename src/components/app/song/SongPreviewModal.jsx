@@ -112,35 +112,65 @@ function GuitarDiagram({ chord }) {
   const { frets, baseFret, barre } = data;
   const numStrings = 6;
   const numFrets = 5;
-  const cellW = 34, cellH = 26, padLeft = 30, padTop = 26;
-  const width = cellW * (numStrings - 1) + padLeft * 2;
-  const height = cellH * numFrets + padTop + 22;
+  // Fixed logical coordinate space — SVG scales via viewBox
+  const cellW = 32, cellH = 28;
+  const padLeft = 26, padRight = 12, padTop = 30, padBottom = 20;
+  const boardW = cellW * (numStrings - 1);
+  const vbW = padLeft + boardW + padRight;
+  const vbH = padTop + 4 + numFrets * cellH + padBottom;
 
   return (
-    <svg width={width} height={height} className="mx-auto">
+    <svg
+      viewBox={`0 0 ${vbW} ${vbH}`}
+      width="100%"
+      style={{ display: 'block', maxWidth: '100%' }}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      {/* Nut or fret number */}
       {baseFret === 1 ? (
-        <rect x={padLeft} y={padTop} width={cellW * (numStrings - 1)} height={4} fill="#888" rx={2} />
+        <rect x={padLeft} y={padTop} width={boardW} height={4} fill="#888" rx={2} />
       ) : (
-        <text x={6} y={padTop + 12} fontSize="10" fill="#888">{baseFret}fr</text>
+        <text x={padLeft - 4} y={padTop + cellH / 2 + 4} fontSize="11" fill="#888" textAnchor="end">{baseFret}fr</text>
       )}
+
+      {/* Fret lines */}
       {Array.from({ length: numFrets + 1 }).map((_, i) => (
-        <line key={i} x1={padLeft} y1={padTop + 4 + i * cellH} x2={padLeft + cellW * (numStrings - 1)} y2={padTop + 4 + i * cellH} stroke="#2a2a3a" strokeWidth={1} />
+        <line key={i}
+          x1={padLeft} y1={padTop + 4 + i * cellH}
+          x2={padLeft + boardW} y2={padTop + 4 + i * cellH}
+          stroke="#2a2a3a" strokeWidth={1} />
       ))}
+
+      {/* String lines */}
       {Array.from({ length: numStrings }).map((_, i) => (
-        <line key={i} x1={padLeft + i * cellW} y1={padTop + 4} x2={padLeft + i * cellW} y2={padTop + 4 + numFrets * cellH} stroke="#444" strokeWidth={1} />
+        <line key={i}
+          x1={padLeft + i * cellW} y1={padTop + 4}
+          x2={padLeft + i * cellW} y2={padTop + 4 + numFrets * cellH}
+          stroke="#444" strokeWidth={1} />
       ))}
-      {barre && (
-        <rect x={padLeft} y={padTop + 4 + (barre - baseFret) * cellH - 9} width={cellW * (numStrings - 1)} height={18} rx={9} fill="hsl(var(--primary))" opacity={0.85} />
-      )}
+
+      {/* Barre — only between leftmost and rightmost barre-fret strings */}
+      {barre && (() => {
+        const barreStrings = frets.map((f, i) => f === barre ? i : -1).filter(i => i >= 0);
+        if (barreStrings.length < 2) return null;
+        const x1 = padLeft + barreStrings[0] * cellW;
+        const x2 = padLeft + barreStrings[barreStrings.length - 1] * cellW;
+        const barreY = padTop + 4 + (barre - baseFret) * cellH + cellH / 2;
+        return <rect key="barre" x={x1} y={barreY - 9} width={x2 - x1} height={18} rx={9} fill="hsl(var(--primary))" opacity={0.85} />;
+      })()}
+
+      {/* Dots */}
       {frets.map((fret, si) => {
         const x = padLeft + si * cellW;
-        if (fret === -1) return <text key={si} x={x} y={padTop - 8} fontSize="12" fill="#ef4444" textAnchor="middle">×</text>;
-        if (fret === 0) return <circle key={si} cx={x} cy={padTop - 10} r={5} fill="none" stroke="#888" strokeWidth={1.5} />;
+        if (fret === -1) return <text key={si} x={x} y={padTop - 10} fontSize="13" fill="#ef4444" textAnchor="middle">×</text>;
+        if (fret === 0) return <circle key={si} cx={x} cy={padTop - 12} r={6} fill="none" stroke="#888" strokeWidth={1.5} />;
         const y = padTop + 4 + (fret - baseFret) * cellH + cellH / 2;
         return <circle key={si} cx={x} cy={y} r={9} fill="hsl(var(--primary))" />;
       })}
+
+      {/* String labels */}
       {['E','A','D','G','B','e'].map((n, i) => (
-        <text key={i} x={padLeft + i * cellW} y={height - 3} fontSize="9" fill="#555" textAnchor="middle">{n}</text>
+        <text key={i} x={padLeft + i * cellW} y={vbH - 4} fontSize="9" fill="#555" textAnchor="middle">{n}</text>
       ))}
     </svg>
   );
@@ -154,8 +184,10 @@ function PianoDiagram({ chord }) {
   const blacks = [1,3,6,8,10];
   const blackPos = {1:0.7, 3:1.7, 6:3.7, 8:4.7, 10:5.7};
   const W=26, H=80, bW=16, bH=52;
+  const vbW = whites.length * W;
+  const vbH = H + 18;
   return (
-    <svg width={whites.length * W} height={H + 18} className="mx-auto mt-2">
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} width="100%" style={{ display: 'block', maxWidth: '100%' }} preserveAspectRatio="xMidYMid meet">
       {whites.map((note, i) => {
         const active = notes.map(n => ((n%12)+12)%12).includes(note);
         return <rect key={i} x={i*W} y={0} width={W-1} height={H} rx={2} fill={active ? 'hsl(var(--primary))' : '#e8e8f0'} stroke="#aaa" strokeWidth={1} />;
@@ -165,7 +197,7 @@ function PianoDiagram({ chord }) {
         const x = blackPos[note] * W;
         return <rect key={note} x={x} y={0} width={bW} height={bH} rx={2} fill={active ? 'hsl(var(--primary) / 0.9)' : '#18182e'} />;
       })}
-      <text x={(whites.length*W)/2} y={H+14} fontSize="10" fill="#666" textAnchor="middle">{chord}</text>
+      <text x={vbW/2} y={H+14} fontSize="10" fill="#666" textAnchor="middle">{chord}</text>
     </svg>
   );
 }
@@ -595,9 +627,11 @@ export default function SongPreviewModal({ song, initialTab = 'chart', onClose, 
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {songChords.map(chord => (
-                            <div key={chord} className="bg-white/4 border border-white/8 rounded-xl p-3 flex flex-col items-center gap-2 hover:border-primary/30 transition-colors">
+                            <div key={chord} className="bg-white/4 border border-white/8 rounded-xl p-3 flex flex-col items-center gap-2 hover:border-primary/30 transition-colors overflow-hidden min-w-0">
                               <p className="text-xs font-bold text-foreground font-mono">{chord}</p>
-                              {chordView === 'guitar' ? <GuitarDiagram chord={chord} /> : <PianoDiagram chord={chord} />}
+                              <div className="w-full min-w-0">
+                                {chordView === 'guitar' ? <GuitarDiagram chord={chord} /> : <PianoDiagram chord={chord} />}
+                              </div>
                             </div>
                           ))}
                         </div>
