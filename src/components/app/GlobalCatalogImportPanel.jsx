@@ -4,17 +4,47 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Database, Loader2, Play, ShieldCheck } from "lucide-react";
 
-const starterJson = `[
-  {
-    "title": "Example Song",
-    "artist": "Example Artist",
-    "key": "G",
-    "bpm": 72,
-    "time_signature": "4/4",
-    "category": "Worship",
-    "tags": ["starter-batch"]
-  }
-]`;
+const starterJson = `{
+  "playlists": [
+    {
+      "id": "37i9dQZF1DWVlWpJblBvap",
+      "label": "Spotify Worship Hits",
+      "category": "Worship",
+      "tags": ["worship-hits"]
+    },
+    {
+      "id": "37i9dQZF1DXcb6CQIjdqKy",
+      "label": "Spotify Top Christian & Gospel",
+      "category": "Worship",
+      "tags": ["christian-gospel"]
+    },
+    {
+      "id": "23f0nEON2rmMQTCsYPZ8sc",
+      "label": "PraiseCharts Top 100 Worship Songs of All Time",
+      "category": "Worship",
+      "tags": ["praisecharts", "worship-classics"]
+    },
+    {
+      "id": "1OKjoeUaByvyv5AwzHX2R3",
+      "label": "PraiseCharts Top New Praise & Worship Songs",
+      "category": "Worship",
+      "tags": ["praisecharts", "new-worship"]
+    },
+    {
+      "id": "51QA9N3auAnh3qkC7vkUVx",
+      "label": "Top 40 Worship Songs CCLI May 2026",
+      "category": "Worship",
+      "tags": ["ccli", "top-worship-2026"]
+    },
+    {
+      "id": "4CajS0j0UugrSHDTNJddZ9",
+      "label": "CCLI 2020s Top 100 Worship Songs",
+      "category": "Worship",
+      "tags": ["ccli", "2020s-worship"]
+    }
+  ],
+  "songs": []
+}`;
 
 export default function GlobalCatalogImportPanel() {
   const [raw, setRaw] = useState(starterJson);
@@ -25,12 +55,18 @@ export default function GlobalCatalogImportPanel() {
 
   const parsed = useMemo(() => {
     try {
-      const songs = JSON.parse(raw);
-      return Array.isArray(songs) ? songs : [];
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) return { songs: data, playlists: [] };
+      return {
+        songs: Array.isArray(data?.songs) ? data.songs : [],
+        playlists: Array.isArray(data?.playlists) ? data.playlists : [],
+      };
     } catch {
-      return [];
+      return { songs: [], playlists: [] };
     }
   }, [raw]);
+
+  const importCount = parsed.songs.length + parsed.playlists.length;
 
   const runImport = async () => {
     setRunning(true);
@@ -39,7 +75,8 @@ export default function GlobalCatalogImportPanel() {
 
     try {
       const res = await base44.functions.invoke("bulkImportGlobalSongs", {
-        songs: parsed,
+        songs: parsed.songs,
+        playlists: parsed.playlists,
         dry_run: dryRun,
         limit: 500,
       });
@@ -61,7 +98,7 @@ export default function GlobalCatalogImportPanel() {
           <div>
             <h3 className="text-sm font-bold text-foreground">Global Catalog Import</h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-              Admin tool for importing high-confidence Spotify-matched songs into the global catalog. Low-confidence matches are skipped.
+            Admin tool for importing Spotify playlist tracks or seed songs into the global catalog. Low-confidence seed matches are skipped.
             </p>
           </div>
         </div>
@@ -91,11 +128,11 @@ export default function GlobalCatalogImportPanel() {
         </label>
         <Button
           onClick={runImport}
-          disabled={running || parsed.length === 0}
+          disabled={running || importCount === 0}
           className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
         >
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          {dryRun ? `Test ${parsed.length} Songs` : `Import ${parsed.length} Songs`}
+          {dryRun ? `Test Batch` : `Import Batch`}
         </Button>
       </div>
 

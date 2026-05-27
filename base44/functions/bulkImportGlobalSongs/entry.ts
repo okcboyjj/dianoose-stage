@@ -26,6 +26,24 @@ type SpotifyTrack = {
   duration_ms?: number;
 };
 
+type PlaylistSeed = {
+  id: string;
+  label?: string;
+  category?: string;
+  tags?: string[];
+};
+
+type AudioFeatures = {
+  id: string;
+  key?: number;
+  mode?: number;
+  tempo?: number;
+  time_signature?: number;
+};
+
+const KEY_NAMES_MAJOR = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+const KEY_NAMES_MINOR = ['Cm', 'C#m', 'Dm', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'];
+
 function normalize(value = '') {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
@@ -43,6 +61,11 @@ function confidentSpotifyMatch(seed: SeedSong, track: SpotifyTrack | null) {
 
 function youtubeSearchUrl(title: string, artist = '') {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} ${artist}`.trim())}`;
+}
+
+function spotifyKey(feature?: AudioFeatures) {
+  if (!feature || feature.key === undefined || feature.key < 0) return '';
+  return feature.mode === 0 ? KEY_NAMES_MINOR[feature.key] : KEY_NAMES_MAJOR[feature.key];
 }
 
 function stylePatchNotes(song: SeedSong) {
@@ -131,6 +154,48 @@ async function findSpotifyTrack(token: string, seed: SeedSong) {
   );
 }
 
+async function getPlaylistTracks(token: string, playlist: PlaylistSeed) {
+  const tracks: SpotifyTrack[] = [];
+  let next:
+    | string
+    | null = `https://api.spotify.com/v1/playlists/${playlist.id}/tracks?limit=100&fields=next,items(track(id,name,artists(name),album(name,images),external_urls,duration_ms))`;
+
+  while (next && tracks.length < 500) {
+    const response = await fetch(next, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      throw new Error(`Spotify playlist error ${response.status}: ${(await response.text()).slice(0, 200)}`);
+    }
+    const data = await response.json();
+    for (const item of data?.items || []) {
+      if (item?.track?.id && item.track.name) tracks.push(item.track);
+    }
+    next = data?.next || null;
+  }
+
+  return tracks;
+}
+
+async function getAudioFeatures(token: string, tracks: SpotifyTrack[]) {
+  const features = new Map<string, AudioFeatures>();
+
+  for (let i = 0; i < tracks.length; i += 100) {
+    const ids = tracks.slice(i, i + 100).map(track => track.id).join(',');
+    if (!ids) continue;
+
+    const response = await fetch(`https://api.spotify.com/v1/audio-features?ids=${ids}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) continue;
+    const data = await response.json();
+    for (const feature of data?.audio_features || []) {
+      if (feature?.id) features.set(feature.id, feature);
+    }
+  }
+
+  return features;
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -143,11 +208,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const seeds = (body?.songs || []) as SeedSong[];
+    const playlists = (body?.playlists || []) as PlaylistSeed[];
     const dryRun = body?.dry_run === true;
     const limit = Math.min(Number(body?.limit || seeds.length || 0), 500);
 
-    if (!Array.isArray(seeds) || seeds.length === 0) {
-      return Response.json({ error: 'songs array is required' }, { status: 400 });
+    if ((!Array.isArray(seeds) || seeds.length === 0) && (!Array.isArray(playlists) || playlists.length === 0)) {
+      return Response.json({ error: 'songs or playlists array is required' }, { status: 400 });
     }
 
     const existing = await base44.asServiceRole.entities.GlobalSong.list('-created_date', 2000);
@@ -159,6 +225,81 @@ Deno.serve(async (req) => {
     const imported = [];
     const skipped = [];
     const failed = [];
+    const playlistTracks: Array<{ track: SpotifyTrack; playlist: PlaylistSeed }> = [];
+
+    for (const playlist of playlists) {
+      try {
+        const tracks = await getPlaylistTracks(token, playlist);
+        for (const track of tracks) playlistTracks.push({ track, playlist });
+      } catch (error) {
+        failed.push({ title: playlist.label || playlist.id, reason: error?.message || String(error) });
+      }
+    }
+
+    const audioFeatures = await getAudioFeatures(token, playlistTracks.map(item => item.track));
+
+    for (const item of playlistTracks.slice(0, limit)) {
+      const track = item.track;
+      const playlist = item.playlist;
+      const spotifyArtist = track.artists.map(artist => artist.name).join(', ');
+      const duplicateKey = `${normalize(track.name)}|${normalize((spotifyArtist || '').split(',')[0])}`;
+
+      if (existingKeys.has(duplicateKey)) {
+        skipped.push({ title: track.name, reason: 'Duplicate' });
+        continue;
+      }
+
+      const feature = audioFeatures.get(track.id);
+      const seed: SeedSong = {
+        title: track.name,
+        artist: spotifyArtist,
+        key: spotifyKey(feature),
+        bpm: feature?.tempo ? Math.round(feature.tempo) : undefined,
+        time_signature: feature?.time_signature ? `${feature.time_signature}/4` : '4/4',
+        category: playlist.category || 'Worship',
+        tags: playlist.tags || [],
+      };
+      const patches = stylePatchNotes(seed);
+      const payload = {
+        title: track.name,
+        artist: spotifyArtist,
+        album: track.album.name,
+        artwork_url: track.album.images?.[0]?.url || '',
+        spotify_url: track.external_urls?.spotify || '',
+        youtube_url: youtubeSearchUrl(track.name, spotifyArtist),
+        key: seed.key || '',
+        bpm: seed.bpm || undefined,
+        time_signature: seed.time_signature || '',
+        capo: 0,
+        category: seed.category || 'Worship',
+        tags: Array.from(new Set([
+          ...(seed.tags || []),
+          'global-catalog',
+          'spotify-verified',
+          'spotify-playlist-import',
+          'youtube-search',
+          'needs-chart',
+        ])),
+        chart_content: '',
+        guitar_patch_notes: patches.guitar,
+        keys_patch_notes: patches.keys,
+        production_notes: `Imported from Spotify playlist${playlist.label ? `: ${playlist.label}` : ''}. Chart still needs manual licensed entry.`,
+        is_active: true,
+        is_verified: true,
+        language: 'English',
+        verified_status: 'Verified',
+        source_url: track.external_urls?.spotify || '',
+        source_notes: `Spotify playlist metadata imported from track ${track.id}. YouTube link is a search link.`,
+      };
+
+      if (!dryRun) {
+        const created = await base44.asServiceRole.entities.GlobalSong.create(payload);
+        imported.push({ id: created?.id, title: payload.title, artist: payload.artist });
+        existingKeys.add(duplicateKey);
+      } else {
+        imported.push({ title: payload.title, artist: payload.artist, dry_run: true });
+      }
+    }
 
     for (const seed of seeds.slice(0, limit)) {
       if (!seed?.title) {
