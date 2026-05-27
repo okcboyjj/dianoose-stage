@@ -38,8 +38,19 @@ function InteractiveChordLine({ line, onChordClick }) {
           <span
             key={i}
             onClick={() => onChordClick(p.value)}
-            className="text-primary font-bold hover:bg-primary/20 rounded transition-colors cursor-pointer"
-            style={{ display: 'inline', minWidth: 0, minHeight: 0, padding: 0, margin: 0, lineHeight: 'inherit', fontFamily: 'inherit', fontSize: 'inherit', whiteSpace: 'pre' }}
+            className="inline-flex items-center justify-center text-primary font-bold bg-primary/10 border border-primary/25 rounded-lg shadow-sm shadow-primary/10 cursor-pointer transition-all duration-200 ease-out hover:scale-110 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-lg hover:shadow-primary/25 active:scale-95"
+            style={{
+              minWidth: `${Math.max(p.value.length, 2)}ch`,
+              minHeight: '1.55em',
+              padding: '0 0.28em',
+              margin: '0 -0.05em',
+              lineHeight: 1,
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              whiteSpace: 'pre',
+              verticalAlign: 'baseline',
+              transformOrigin: 'center',
+            }}
           >
             {p.value}
           </span>
