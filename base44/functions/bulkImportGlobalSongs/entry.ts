@@ -30,6 +30,17 @@ function normalize(value = '') {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+function confidentSpotifyMatch(seed: SeedSong, track: SpotifyTrack | null) {
+  if (!track) return false;
+
+  const seedTitle = normalize(seed.title);
+  const seedArtist = normalize((seed.artist || '').split(',')[0]);
+  const trackTitle = normalize(track.name);
+  const trackArtists = normalize(track.artists.map(artist => artist.name).join(' '));
+
+  return trackTitle === seedTitle && (!seedArtist || trackArtists.includes(seedArtist));
+}
+
 function youtubeSearchUrl(title: string, artist = '') {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${title} ${artist}`.trim())}`;
 }
@@ -163,8 +174,8 @@ Deno.serve(async (req) => {
 
       try {
         const track = await findSpotifyTrack(token, seed);
-        if (!track) {
-          failed.push({ title: seed.title, reason: 'No Spotify match' });
+        if (!confidentSpotifyMatch(seed, track)) {
+          failed.push({ title: seed.title, reason: 'Skipped: no high-confidence Spotify match' });
           continue;
         }
 
@@ -190,9 +201,9 @@ Deno.serve(async (req) => {
             seed.production_notes ||
             'Imported for global catalog. Spotify metadata/artwork verified. Chart still needs manual licensed entry.',
           is_active: true,
-          is_verified: false,
+          is_verified: true,
           language: seed.language || 'English',
-          verified_status: 'Needs Review',
+          verified_status: 'Verified',
           source_url: track.external_urls?.spotify || '',
           source_notes: `Spotify metadata imported from track ${track.id}. YouTube link is a search link.`,
         };
