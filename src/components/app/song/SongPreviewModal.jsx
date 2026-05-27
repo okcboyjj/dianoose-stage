@@ -119,8 +119,8 @@ function GuitarDiagram({ chord }) {
   const numStrings = 6;
   const numFrets = 5;
   // Fixed logical coordinate space — SVG scales via viewBox
-  const cellW = 32, cellH = 28;
-  const padLeft = 26, padRight = 12, padTop = 30, padBottom = 20;
+  const cellW = 27, cellH = 21;
+  const padLeft = 24, padRight = 14, padTop = 28, padBottom = 18;
   const boardW = cellW * (numStrings - 1);
   const vbW = padLeft + boardW + padRight;
   const vbH = padTop + 4 + numFrets * cellH + padBottom;
@@ -129,7 +129,7 @@ function GuitarDiagram({ chord }) {
     <svg
       viewBox={`0 0 ${vbW} ${vbH}`}
       width="100%"
-      style={{ display: 'block', maxWidth: '100%' }}
+      style={{ display: 'block', maxWidth: 220 }}
       preserveAspectRatio="xMidYMid meet"
     >
       {/* Nut or fret number */}
@@ -162,16 +162,16 @@ function GuitarDiagram({ chord }) {
         const x1 = padLeft + barreStrings[0] * cellW;
         const x2 = padLeft + barreStrings[barreStrings.length - 1] * cellW;
         const barreY = padTop + 4 + (barre - baseFret) * cellH + cellH / 2;
-        return <rect key="barre" x={x1} y={barreY - 9} width={x2 - x1} height={18} rx={9} fill="hsl(var(--primary))" opacity={0.85} />;
+        return <rect key="barre" x={x1} y={barreY - 7} width={x2 - x1} height={14} rx={7} fill="hsl(var(--primary))" opacity={0.85} />;
       })()}
 
       {/* Dots */}
       {frets.map((fret, si) => {
         const x = padLeft + si * cellW;
         if (fret === -1) return <text key={si} x={x} y={padTop - 10} fontSize="13" fill="#ef4444" textAnchor="middle">×</text>;
-        if (fret === 0) return <circle key={si} cx={x} cy={padTop - 12} r={6} fill="none" stroke="#888" strokeWidth={1.5} />;
+        if (fret === 0) return <circle key={si} cx={x} cy={padTop - 12} r={5} fill="none" stroke="#888" strokeWidth={1.5} />;
         const y = padTop + 4 + (fret - baseFret) * cellH + cellH / 2;
-        return <circle key={si} cx={x} cy={y} r={9} fill="hsl(var(--primary))" />;
+        return <circle key={si} cx={x} cy={y} r={7} fill="hsl(var(--primary))" />;
       })}
 
       {/* String labels */}
@@ -232,7 +232,7 @@ function ChordPanel({ chord, onClose }) {
           </button>
         ))}
       </div>
-      <div className="flex items-center justify-center py-2 min-h-[120px]">
+      <div className="flex items-center justify-center py-1 max-h-[180px] overflow-hidden">
         {view === 'guitar' ? <GuitarDiagram chord={chord} /> : <PianoDiagram chord={chord} />}
       </div>
     </motion.div>
@@ -259,9 +259,9 @@ function ChordLine({ line, onChordClick }) {
             onClick={() => onChordClick(p.value)}
             className="inline-flex items-center justify-center text-primary font-bold bg-primary/10 border border-primary/25 rounded-lg shadow-sm shadow-primary/10 cursor-pointer transition-all duration-200 ease-out hover:scale-110 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-lg hover:shadow-primary/25 active:scale-95"
             style={{
-              minWidth: `${Math.max(p.value.length, 2)}ch`,
+              minWidth: `${Math.max(p.value.length + 1, 3)}ch`,
               minHeight: '1.55em',
-              padding: '0 0.28em',
+              padding: '0 0.42em',
               margin: '0 -0.05em',
               lineHeight: 1,
               fontFamily: 'inherit',

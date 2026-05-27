@@ -40,9 +40,9 @@ function InteractiveChordLine({ line, onChordClick }) {
             onClick={() => onChordClick(p.value)}
             className="inline-flex items-center justify-center text-primary font-bold bg-primary/10 border border-primary/25 rounded-lg shadow-sm shadow-primary/10 cursor-pointer transition-all duration-200 ease-out hover:scale-110 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-lg hover:shadow-primary/25 active:scale-95"
             style={{
-              minWidth: `${Math.max(p.value.length, 2)}ch`,
+              minWidth: `${Math.max(p.value.length + 1, 3)}ch`,
               minHeight: '1.55em',
-              padding: '0 0.28em',
+              padding: '0 0.42em',
               margin: '0 -0.05em',
               lineHeight: 1,
               fontFamily: 'inherit',

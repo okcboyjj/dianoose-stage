@@ -96,9 +96,9 @@ function GuitarDiagram({ chord }) {
   const { frets, fingers, baseFret, barre } = data;
   const numStrings = 6;
   const numFrets = 5;
-  const cellW = 36;
-  const cellH = 28;
-  const padLeft = 28;
+  const cellW = 28;
+  const cellH = 22;
+  const padLeft = 24;
   const padTop = 24;
   const width = cellW * (numStrings - 1) + padLeft * 2;
   const height = cellH * numFrets + padTop + 20;
@@ -106,7 +106,7 @@ function GuitarDiagram({ chord }) {
   const stringNames = ['E', 'A', 'D', 'G', 'B', 'e'];
 
   return (
-    <svg width={width} height={height} className="mx-auto">
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" className="mx-auto h-auto" style={{ display: 'block', maxWidth: 220 }}>
       {/* Nut or base fret */}
       {baseFret === 1 ? (
         <rect x={padLeft} y={padTop} width={cellW * (numStrings - 1)} height={4} fill="#a0a0b0" rx={2} />
@@ -131,7 +131,7 @@ function GuitarDiagram({ chord }) {
         const x1 = padLeft + barreStrings[0] * cellW;
         const x2 = padLeft + barreStrings[barreStrings.length - 1] * cellW;
         const barreY = padTop + 4 + (barre - baseFret) * cellH + cellH / 2;
-        return <rect key="barre" x={x1} y={barreY - 10} width={x2 - x1} height={20} rx={10} fill="hsl(var(--primary))" opacity={0.85} />;
+        return <rect key="barre" x={x1} y={barreY - 8} width={x2 - x1} height={16} rx={8} fill="hsl(var(--primary))" opacity={0.85} />;
       })()}
 
       {/* Dots */}
@@ -145,7 +145,7 @@ function GuitarDiagram({ chord }) {
         }
         const y = padTop + 4 + (fret - baseFret) * cellH + cellH / 2;
         return (
-          <circle key={si} cx={x} cy={y} r={9} fill="hsl(var(--primary))" />
+          <circle key={si} cx={x} cy={y} r={7} fill="hsl(var(--primary))" />
         );
       })}
 
@@ -207,7 +207,7 @@ export default function ChordDiagramPopup({ chord, onClose }) {
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-card border border-border/60 rounded-2xl p-5 shadow-2xl w-full max-w-xs mx-4 mb-4 sm:mb-0 z-10"
+        className="relative bg-card border border-border/60 rounded-2xl p-5 shadow-2xl w-full max-w-sm mx-4 mb-4 sm:mb-0 z-10 max-h-[88vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
@@ -229,7 +229,7 @@ export default function ChordDiagramPopup({ chord, onClose }) {
           ))}
         </div>
 
-        <div className="flex items-center justify-center py-3 min-h-[120px]">
+        <div className="flex items-center justify-center py-2 max-h-[240px] overflow-hidden">
           {view === 'guitar' ? <GuitarDiagram chord={chord} /> : <PianoDiagram chord={chord} />}
         </div>
 
