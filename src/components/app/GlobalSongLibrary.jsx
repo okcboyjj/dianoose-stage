@@ -343,7 +343,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    GlobalSongEntity.list("-created_date", 300).then(data => {
+    GlobalSongEntity.list("-created_date", 1000).then(data => {
       setSongs(data);
       setLoading(false);
     });
