@@ -238,7 +238,8 @@ Deno.serve(async (req) => {
 
     const audioFeatures = await getAudioFeatures(token, playlistTracks.map(item => item.track));
 
-    for (const item of playlistTracks.slice(0, limit)) {
+    for (const item of playlistTracks) {
+      if (imported.length >= limit) break;
       const track = item.track;
       const playlist = item.playlist;
       const spotifyArtist = track.artists.map(artist => artist.name).join(', ');
@@ -301,7 +302,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    for (const seed of seeds.slice(0, limit)) {
+    for (const seed of seeds) {
+      if (imported.length >= limit) break;
       if (!seed?.title) {
         failed.push({ title: seed?.title || '(missing title)', reason: 'Missing title' });
         continue;

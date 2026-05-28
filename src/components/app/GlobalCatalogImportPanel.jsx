@@ -67,6 +67,23 @@ export default function GlobalCatalogImportPanel() {
   }, [raw]);
 
   const importCount = parsed.songs.length + parsed.playlists.length;
+  const loadVerifiedBatch = async () => {
+    setRunning(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const response = await fetch("/data/worshiponline-seeds.json");
+      if (!response.ok) throw new Error("Could not load seed batch");
+      const seeds = await response.json();
+      setRaw(JSON.stringify({ playlists: [], songs: seeds }, null, 2));
+      setDryRun(true);
+    } catch (err) {
+      setError(err?.message || "Could not load seed batch");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const runImport = async () => {
     setRunning(true);
@@ -106,6 +123,18 @@ export default function GlobalCatalogImportPanel() {
           <ShieldCheck className="w-3.5 h-3.5" />
           Spotify-only artwork
         </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-primary/15 bg-primary/5 p-3">
+        <div>
+          <p className="text-xs font-bold text-foreground">Verified Worship Online seed batch</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Loads 717 songs with sourced key, BPM, and time signature. Import stops at 500 successful non-duplicates.
+          </p>
+        </div>
+        <Button type="button" variant="outline" onClick={loadVerifiedBatch} className="text-xs shrink-0">
+          Load 500-song batch
+        </Button>
       </div>
 
       <Textarea
