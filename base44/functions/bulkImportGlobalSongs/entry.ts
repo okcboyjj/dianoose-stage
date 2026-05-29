@@ -48,15 +48,31 @@ function normalize(value = '') {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+function normalizeTitle(value = '') {
+  return normalize(value)
+    .replace(/\b(live|radio|edit|version|acoustic|studio|single|feat|featuring|ft|remastered|spontaneous)\b/g, ' ')
+    .replace(/\bfrom\s+the\s+.*$/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function confidentSpotifyMatch(seed: SeedSong, track: SpotifyTrack | null) {
   if (!track) return false;
 
-  const seedTitle = normalize(seed.title);
+  const seedTitle = normalizeTitle(seed.title);
   const seedArtist = normalize((seed.artist || '').split(',')[0]);
-  const trackTitle = normalize(track.name);
+  const trackTitle = normalizeTitle(track.name);
   const trackArtists = normalize(track.artists.map(artist => artist.name).join(' '));
+  const titleMatches =
+    trackTitle === seedTitle ||
+    trackTitle.includes(seedTitle) ||
+    seedTitle.includes(trackTitle);
+  const artistMatches =
+    !seedArtist ||
+    trackArtists.includes(seedArtist) ||
+    seedArtist.includes(trackArtists.split(' ')[0] || '');
 
-  return trackTitle === seedTitle && (!seedArtist || trackArtists.includes(seedArtist));
+  return titleMatches || (artistMatches && seedTitle.split(' ').some(word => word.length > 4 && trackTitle.includes(word)));
 }
 
 function youtubeSearchUrl(title: string, artist = '') {
