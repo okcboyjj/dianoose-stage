@@ -11,7 +11,6 @@ import { Music, Home as HomeIcon, List, Star, Guitar, Users, Bell, Shield, Setti
 const OCRImportModal = lazy(() => import("@/components/app/song/OCRImportModal.jsx"));
 import MobileSelect from "@/components/ui/MobileSelect";
 const GlobalSongLibrary = lazy(() => import("@/components/app/GlobalSongLibrary.jsx"));
-const GlobalCatalogImportPanel = lazy(() => import("@/components/app/GlobalCatalogImportPanel.jsx"));
 const SongDetailModal = lazy(() => import("@/components/app/song/SongDetailModal.jsx"));
 const SongPreviewModal = lazy(() => import("@/components/app/song/SongPreviewModal.jsx"));
 // SpotifySearchModal removed — Spotify search is now integrated into GlobalSongLibrary
@@ -1519,11 +1518,6 @@ function MainApp({ onLogout }) {
         {songLibTab === "global" ? (
           <CatalogErrorBoundary resetKey={`${songLibTab}-${songs.length}`}>
             <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>}>
-              {isAdmin && (
-                <Suspense fallback={sectionFallback2}>
-                  <GlobalCatalogImportPanel />
-                </Suspense>
-              )}
               <GlobalSongLibrary churchId={church?.id} churchSongs={songs} onSongCloned={() => loadData("songs")} />
             </Suspense>
           </CatalogErrorBoundary>
