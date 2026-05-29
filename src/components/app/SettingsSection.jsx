@@ -277,7 +277,7 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
                 <div className="bg-card border border-border/40 rounded-xl p-3 flex items-center gap-3 w-56">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: themeForm.accent_color + "33" }}>
                     {themeForm.logo_url ? (
-                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-contain p-1" />
+                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-cover scale-[1.35]" />
                     ) : (
                       <Music className="w-4 h-4" style={{ color: themeForm.accent_color }} />
                     )}
@@ -291,7 +291,7 @@ export default function SettingsSection({ church, user, onChurchUpdate, onUserUp
                 <div className="bg-card border border-border/40 rounded-xl px-3 py-2.5 flex items-center gap-2 w-56">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: themeForm.accent_color + "33" }}>
                     {themeForm.logo_url ? (
-                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-contain p-0.5" />
+                      <img src={themeForm.logo_url} alt="logo preview" className="w-full h-full object-cover scale-[1.35]" />
                     ) : (
                       <Music className="w-3.5 h-3.5" style={{ color: themeForm.accent_color }} />
                     )}
