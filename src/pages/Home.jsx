@@ -1520,7 +1520,7 @@ function MainApp({ onLogout }) {
           <CatalogErrorBoundary resetKey={`${songLibTab}-${songs.length}`}>
             <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>}>
               {isAdmin && (
-                <Suspense fallback={sectionFallback}>
+                <Suspense fallback={sectionFallback2}>
                   <GlobalCatalogImportPanel />
                 </Suspense>
               )}
