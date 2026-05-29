@@ -323,6 +323,7 @@ function DuplicateToast({ title, onClose }) {
 export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned }) {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [keyFilter, setKeyFilter] = useState("All");
   const [artistFilter, setArtistFilter] = useState("All");
@@ -342,12 +343,24 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   const audioRef = useRef(null);
   const debounceRef = useRef(null);
 
-  useEffect(() => {
-    GlobalSongEntity.list("-created_date", 1000).then(data => {
-      setSongs(data);
+  const loadGlobalSongs = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const data = await GlobalSongEntity.list("-created_date", 1000);
+      setSongs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Global catalog failed to load", error);
+      setSongs([]);
+      setLoadError("Could not load the global catalog. Please try again.");
+    } finally {
       setLoading(false);
-    });
+    }
   }, []);
+
+  useEffect(() => {
+    loadGlobalSongs();
+  }, [loadGlobalSongs]);
 
   useEffect(() => {
     const map = {};
@@ -458,7 +471,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
       s.transliteration_title?.toLowerCase().includes(q) ||
       s.artist?.toLowerCase().includes(q) ||
       s.album?.toLowerCase().includes(q) ||
-      (s.tags || []).some(t => t.toLowerCase().includes(q));
+      (Array.isArray(s.tags) ? s.tags : []).some(t => String(t).toLowerCase().includes(q));
     const matchKey = keyFilter === "All" || s.key === keyFilter;
     const matchArtist = artistFilter === "All" || s.artist === artistFilter;
     const matchVerified = sortBy !== "verified" || s.is_verified;
@@ -488,6 +501,19 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
     <div className="flex flex-col items-center justify-center py-16 gap-3">
       <Loader2 className="w-6 h-6 text-primary animate-spin" />
       <p className="text-xs text-muted-foreground font-medium">Loading worship catalog...</p>
+    </div>
+  );
+
+  if (loadError) return (
+    <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-5 text-center space-y-3">
+      <AlertCircle className="w-8 h-8 text-red-300 mx-auto" />
+      <div>
+        <p className="text-sm font-bold text-foreground">Global Catalog did not load</p>
+        <p className="text-xs text-muted-foreground mt-1">{loadError}</p>
+      </div>
+      <Button type="button" onClick={loadGlobalSongs} className="bg-primary text-primary-foreground">
+        Try Again
+      </Button>
     </div>
   );
 

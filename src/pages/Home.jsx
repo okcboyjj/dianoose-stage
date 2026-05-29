@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, Component } from "react";
 import { applyChurchTheme } from "@/lib/applyTheme.js";
 import { motion, AnimatePresence } from "framer-motion";
 import { base44 } from "@/api/base44Client";
@@ -32,6 +32,41 @@ const ChurchMemberEntity = base44.entities.ChurchMember;
 const ChurchEntity = base44.entities.Church;
 const MyLibrarySongEntity = base44.entities.MyLibrarySong;
 const NotificationEntity = base44.entities.Notification;
+
+class CatalogErrorBoundary extends Component {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  componentDidCatch(error) {
+    console.error("Global Catalog crashed", error);
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    return (
+      <div className="rounded-2xl border border-red-500/25 bg-red-500/10 p-5 text-center space-y-3">
+        <AlertCircle className="w-8 h-8 text-red-300 mx-auto" />
+        <div>
+          <p className="text-sm font-bold text-foreground">Global Catalog could not load</p>
+          <p className="text-xs text-muted-foreground mt-1">One catalog item or request caused the view to crash. Try again after refreshing.</p>
+        </div>
+        <Button type="button" onClick={() => window.location.reload()} className="bg-primary text-primary-foreground">
+          Reload App
+        </Button>
+      </div>
+    );
+  }
+}
 
 // ─── Global Styles & Animations ───────────────────────────────────────────────
 const GlobalStyles = () => (
@@ -1482,14 +1517,16 @@ function MainApp({ onLogout }) {
         </div>
 
         {songLibTab === "global" ? (
-          <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>}>
-            {isAdmin && (
-              <Suspense fallback={sectionFallback}>
-                <GlobalCatalogImportPanel />
-              </Suspense>
-            )}
-            <GlobalSongLibrary churchId={church?.id} churchSongs={songs} onSongCloned={() => loadData("songs")} />
-          </Suspense>
+          <CatalogErrorBoundary resetKey={`${songLibTab}-${songs.length}`}>
+            <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>}>
+              {isAdmin && (
+                <Suspense fallback={sectionFallback}>
+                  <GlobalCatalogImportPanel />
+                </Suspense>
+              )}
+              <GlobalSongLibrary churchId={church?.id} churchSongs={songs} onSongCloned={() => loadData("songs")} />
+            </Suspense>
+          </CatalogErrorBoundary>
         ) : (
           <>
             <div className="flex flex-col gap-2">
