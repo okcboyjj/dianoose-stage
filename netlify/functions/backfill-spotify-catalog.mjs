@@ -1,6 +1,5 @@
-export const config = {
-  schedule: '17 * * * *',
-};
+// Kept as a manual endpoint only. Background catalog work now runs through
+// Codex automation so routine backfill does not spend Netlify credits.
 
 const APP_ID = process.env.BASE44_APP_ID || process.env.VITE_BASE44_APP_ID || '6a0285069dbc9db7d3093799';
 const BACKFILL_SECRET = process.env.BACKFILL_SECRET;
