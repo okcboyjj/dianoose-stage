@@ -337,6 +337,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   // Spotify
   const [spotifyResults, setSpotifyResults] = useState([]);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [spotifyError, setSpotifyError] = useState("");
   const [importingId, setImportingId] = useState(null);
   const [importedIds, setImportedIds] = useState(new Set());
   const [playingId, setPlayingId] = useState(null);
@@ -372,16 +373,26 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
   useEffect(() => {
     clearTimeout(debounceRef.current);
     const q = search.trim();
-    if (q.length < 2) { setSpotifyResults([]); return; }
+    if (q.length < 2) { setSpotifyResults([]); setSpotifyError(""); return; }
 
     debounceRef.current = setTimeout(async () => {
       setSpotifyLoading(true);
+      setSpotifyError("");
       try {
         const res = await base44.functions.invoke("spotifySearch", { query: q });
         const data = res?.data ?? res;
         setSpotifyResults(data?.results || []);
-      } catch {
+      } catch (error) {
         setSpotifyResults([]);
+        const status = error?.response?.status;
+        const apiMessage = error?.response?.data?.error || error?.message || "";
+        if (status === 429 || apiMessage.toLowerCase().includes("rate limit")) {
+          setSpotifyError("Spotify search is cooling down from too many requests. Try again in a few minutes.");
+        } else if (apiMessage.toLowerCase().includes("spotify_client")) {
+          setSpotifyError("Spotify search needs the Spotify Client ID and Client Secret set in Base44.");
+        } else {
+          setSpotifyError("Spotify search is temporarily unavailable. Your saved catalog still works.");
+        }
       } finally {
         setSpotifyLoading(false);
       }
@@ -495,7 +506,7 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
     ? spotifyResults.filter(t => !nativeTitles.has(`${t.title?.toLowerCase()}|${t.artist?.toLowerCase()}`))
     : [];
 
-  const showSpotifySection = search.trim().length >= 2 && (spotifyLoading || dedupedSpotify.length > 0);
+  const showSpotifySection = search.trim().length >= 2 && (spotifyLoading || dedupedSpotify.length > 0 || !!spotifyError);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -646,6 +657,15 @@ export default function GlobalSongLibrary({ churchId, churchSongs, onSongCloned 
             <div className="grid gap-2">
               {spotifyLoading
                 ? [...Array(4)].map((_, i) => <SkeletonCard key={i} />)
+                : spotifyError ? (
+                    <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+                      <AlertCircle className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-amber-100">Spotify search paused</p>
+                        <p className="text-xs text-amber-100/75 mt-0.5">{spotifyError}</p>
+                      </div>
+                    </div>
+                  )
                 : dedupedSpotify.map(track => (
                     <SpotifyResultRow
                       key={track.spotify_id}

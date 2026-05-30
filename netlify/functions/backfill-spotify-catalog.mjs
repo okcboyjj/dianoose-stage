@@ -22,7 +22,7 @@ export default async () => {
       'x-app-id': APP_ID,
       'x-backfill-secret': BACKFILL_SECRET,
     },
-    body: JSON.stringify({ limit: Number(process.env.BACKFILL_BATCH_SIZE || 20) }),
+    body: JSON.stringify({ limit: Number(process.env.BACKFILL_BATCH_SIZE || 3) }),
   });
 
   const text = await response.text();

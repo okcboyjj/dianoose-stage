@@ -3,6 +3,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 async function getSpotifyToken() {
   const clientId = Deno.env.get("SPOTIFY_CLIENT_ID");
   const clientSecret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET");
+  }
+
   const creds = btoa(`${clientId}:${clientSecret}`);
 
   const res = await fetch("https://accounts.spotify.com/api/token", {
@@ -47,6 +51,17 @@ Deno.serve(async (req) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
+    if (searchRes.status === 429) {
+      const retryAfter = searchRes.headers.get("retry-after");
+      return Response.json(
+        {
+          error: "Spotify is rate limiting searches right now. Try again in a little bit.",
+          retry_after: retryAfter ? Number(retryAfter) : null,
+        },
+        { status: 429 },
+      );
+    }
+
     if (!searchRes.ok) {
       const errText = await searchRes.text();
       return Response.json({ error: `Spotify API error: ${searchRes.status} ${errText}` }, { status: 502 });
@@ -69,6 +84,6 @@ Deno.serve(async (req) => {
 
     return Response.json({ results });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message || String(error) }, { status: 500 });
   }
 });
